@@ -1,4 +1,8 @@
+import { AnalyticsCard } from "@/src/components/AnalyticsCard";
+import { Section } from "@/src/components/Section";
+import { SectionHeader } from "@/src/components/SectionHeader";
 import React from "react";
+
 
 export default function AdminPage() {
   return (
@@ -8,10 +12,21 @@ export default function AdminPage() {
         {/* Add nav links or actions here if needed */}
       </header>
       <div className="p-8">
-        <h1 className="text-2xl font-bold mb-4">Admin Listing</h1>
+        <h1 className="text-xl font-bold mb-4">Admin Listing</h1>
+        {/* Analytics Section */}
+        <Section>
+          <SectionHeader>Analytics</SectionHeader>
+          <div className="flex gap-6">
+            <AnalyticsCard title="Total Admins" value={42} />
+            <AnalyticsCard title="Platform Admins" value={7} />
+          </div>
+        </Section>
 
-        </div>
-        <div className="h-[100vh]" />
+        <Section>
+          <SectionHeader>Admin management</SectionHeader>
+        </Section>
+      </div>
+      <div className="h-[100vh]" />
     </>
   );
 }
