@@ -8,8 +8,8 @@ import { User, Shield, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DataTable_Search } from "@/src/components/ui/data-table-search";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
-
 import Image from "next/image";
+import Link from "next/link";
 
 // Table columns definition
 const columns = [
@@ -29,6 +29,7 @@ const columns = [
   {
     accessorKey: "name",
     header: "Name",
+    cell: ({ row }: any) => <Link href={`/admin/${row.original.id}`} className="hover:underline">{row.original.name}</Link>,
   },
   {
     accessorKey: "email",

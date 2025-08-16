@@ -43,7 +43,7 @@ export function DataTable_Search<TData, TValue>({ columns, data, searchPlacehold
           className="w-[300px]"
         />
       </div>
-      <div className="rounded-md border">
+      <div className="rounded-md">
         <DataTable
           columns={columns}
           data={data}
