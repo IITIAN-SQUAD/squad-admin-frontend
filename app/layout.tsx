@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Urbanist } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import React from "react";
 import {
@@ -19,7 +19,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SIDEBAR_LINKS } from "@/assets/constants/sidebar-links";
 import { ThemeProvider } from "@/components/ui/theme-provider";
 
-const urbanist = Urbanist({
+const urbanist = Inter({
   variable: "--font-urbanist-sans",
   subsets: ["latin"],
 });
@@ -35,52 +35,62 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${urbanist.variable} antialiased`}>
-        <div className="h-[100vh] flex">
-          <div className="sidebar-wrapper">
-            <SidebarProvider>
-              <Sidebar className="w-64 bg-blue-500!">
-                <SidebarHeader className="p-6">
-                  <span className="font-bold text-md">IITian Squad</span>
-                </SidebarHeader>
+    <html lang="en" suppressHydrationWarning>
+      <head />
+      <body className={urbanist.className}>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <div className="h-[100vh] flex">
+            <div className="sidebar-wrapper">
+              <SidebarProvider>
+                <Sidebar className="w-64 ">
+                  <SidebarHeader className="p-6">
+                    <span className="font-bold text-md">IITian Squad</span>
+                  </SidebarHeader>
 
-                <SidebarContent className="p-2">
-                  <SidebarGroup>
-                    <SidebarGroupLabel>Admin management</SidebarGroupLabel>
-                    <SidebarGroupContent>
-                      <SidebarMenu>
-                        {SIDEBAR_LINKS.adminManagement.map((item) => (
-                          <SidebarMenuItem key={item.title}>
-                            <SidebarMenuButton asChild>
-                              <a href={item.url}>
-                                <item.icon />
-                                <span>{item.title}</span>
-                              </a>
-                            </SidebarMenuButton>
-                          </SidebarMenuItem>
-                        ))}
-                      </SidebarMenu>
-                    </SidebarGroupContent>
-                  </SidebarGroup>
-                </SidebarContent>
-                <SidebarFooter>
-                  <div className="flex items-start gap-4 px-4 py-4">
-                    <Avatar>
-                      <AvatarImage src="/profile.jpg" alt="Profile" />
-                      <AvatarFallback>IS</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <div className="font-medium">Your Name</div>
-                      <div className="text-xs text-muted-foreground">Admin</div>
+                  <SidebarContent className="p-2">
+                    <SidebarGroup>
+                      <SidebarGroupLabel>Admin management</SidebarGroupLabel>
+                      <SidebarGroupContent>
+                        <SidebarMenu>
+                          {SIDEBAR_LINKS.adminManagement.map((item) => (
+                            <SidebarMenuItem key={item.title}>
+                              <SidebarMenuButton asChild>
+                                <a href={item.url}>
+                                  <item.icon />
+                                  <span>{item.title}</span>
+                                </a>
+                              </SidebarMenuButton>
+                            </SidebarMenuItem>
+                          ))}
+                        </SidebarMenu>
+                      </SidebarGroupContent>
+                    </SidebarGroup>
+                  </SidebarContent>
+                  <SidebarFooter>
+                    <div className="flex items-start gap-4 px-4 py-4">
+                      <Avatar>
+                        <AvatarImage src="/profile.jpg" alt="Profile" />
+                        <AvatarFallback>IS</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <div className="font-medium">Your Name</div>
+                        <div className="text-xs text-muted-foreground">
+                          Admin
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </SidebarFooter>
-              </Sidebar>
-            </SidebarProvider>
+                  </SidebarFooter>
+                </Sidebar>
+              </SidebarProvider>
+            </div>
+            <main className=" grow-1 h-full shrink-0">{children}</main>
           </div>
-          <main className=" grow-1 h-full shrink-0">{children}</main>
-        </div>
+        </ThemeProvider>
       </body>
     </html>
   );

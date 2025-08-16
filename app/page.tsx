@@ -2,6 +2,8 @@ import Image from "next/image";
 
 export default function Home() {
   return (
-    <>Home</>
+    <>
+      <div className="px-6 py-4">Home</div>
+    </>
   );
 }

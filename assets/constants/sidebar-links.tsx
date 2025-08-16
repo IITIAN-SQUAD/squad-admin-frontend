@@ -4,7 +4,7 @@ export const SIDEBAR_LINKS = {
     adminManagement: [
         {
             title: "Admin List",
-            url: "#",
+            url: "/admin",
             icon: UserLock
         }
     ]
