@@ -2,7 +2,7 @@ import { AnalyticsCard } from "@/src/components/AnalyticsCard";
 import { Section } from "@/src/components/Section";
 import { SectionHeader } from "@/src/components/SectionHeader";
 import React from "react";
-
+import { User, Shield } from "lucide-react";
 
 export default function AdminPage() {
   return (
@@ -17,8 +17,8 @@ export default function AdminPage() {
         <Section>
           <SectionHeader>Analytics</SectionHeader>
           <div className="flex gap-6">
-            <AnalyticsCard title="Total Admins" value={42} />
-            <AnalyticsCard title="Platform Admins" value={7} />
+            <AnalyticsCard title="Total Admins" value={42} icon={<User />} />
+            <AnalyticsCard title="Platform Admins" value={7} icon={<Shield />} />
           </div>
         </Section>
 
