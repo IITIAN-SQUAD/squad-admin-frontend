@@ -1,16 +1,26 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Urbanist } from "next/font/google";
 import "./globals.css";
 import React from "react";
-import { Sidebar, SidebarProvider } from "@/components/ui/sidebar"; // shadcn sidebar import
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarHeader,
+  SidebarProvider,
+  SidebarGroupLabel,
+  SidebarGroupContent,
+  SidebarMenuButton,
+  SidebarMenu,
+  SidebarMenuItem,
+} from "@/components/ui/sidebar"; // shadcn sidebar import
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { SIDEBAR_LINKS } from "@/assets/constants/sidebar-links";
+import { ThemeProvider } from "@/components/ui/theme-provider";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const urbanist = Urbanist({
+  variable: "--font-urbanist-sans",
   subsets: ["latin"],
 });
 
@@ -26,14 +36,46 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className={`${urbanist.variable} antialiased`}>
         <div className="h-[100vh] flex">
           <div className="sidebar-wrapper">
             <SidebarProvider>
               <Sidebar className="w-64 bg-blue-500!">
-                {/* Add sidebar links/components here as needed */}
+                <SidebarHeader className="p-6">
+                  <span className="font-bold text-md">IITian Squad</span>
+                </SidebarHeader>
+
+                <SidebarContent className="p-2">
+                  <SidebarGroup>
+                    <SidebarGroupLabel>Admin management</SidebarGroupLabel>
+                    <SidebarGroupContent>
+                      <SidebarMenu>
+                        {SIDEBAR_LINKS.adminManagement.map((item) => (
+                          <SidebarMenuItem key={item.title}>
+                            <SidebarMenuButton asChild>
+                              <a href={item.url}>
+                                <item.icon />
+                                <span>{item.title}</span>
+                              </a>
+                            </SidebarMenuButton>
+                          </SidebarMenuItem>
+                        ))}
+                      </SidebarMenu>
+                    </SidebarGroupContent>
+                  </SidebarGroup>
+                </SidebarContent>
+                <SidebarFooter>
+                  <div className="flex items-start gap-4 px-4 py-4">
+                    <Avatar>
+                      <AvatarImage src="/profile.jpg" alt="Profile" />
+                      <AvatarFallback>IS</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <div className="font-medium">Your Name</div>
+                      <div className="text-xs text-muted-foreground">Admin</div>
+                    </div>
+                  </div>
+                </SidebarFooter>
               </Sidebar>
             </SidebarProvider>
           </div>
