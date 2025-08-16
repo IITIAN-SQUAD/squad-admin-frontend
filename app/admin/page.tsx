@@ -3,18 +3,13 @@
 import { AnalyticsCard } from "@/src/components/AnalyticsCard";
 import { Section } from "@/src/components/Section";
 import { SectionHeader } from "@/src/components/SectionHeader";
-import React, { useState } from "react";
+import React from "react";
 import { User, Shield, Settings } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { DataTable_Search } from "@/src/components/ui/data-table-search";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@radix-ui/react-dropdown-menu";
+
 import Image from "next/image";
-import { DataTable } from "@/components/ui/data-table";
 
 // Table columns definition
 const columns = [
@@ -22,7 +17,7 @@ const columns = [
     accessorKey: "image",
     header: "Image",
     cell: ({ row }: any) => (
-      <Image
+            <Image
         src={row.original.image}
         alt={row.original.name}
         width={32}
@@ -98,15 +93,6 @@ const adminData = [
 ];
 
 export default function AdminPage() {
-  const [search, setSearch] = useState("");
-
-  // Filter data by name/email
-  const filteredData = adminData.filter(
-    (admin) =>
-      admin.name.toLowerCase().includes(search.toLowerCase()) ||
-      admin.email.toLowerCase().includes(search.toLowerCase())
-  );
-
   return (
     <>
       <header className="w-full border-b px-6 py-4 flex items-center bg-background sticky top-0 z-50">
@@ -126,16 +112,8 @@ export default function AdminPage() {
 
         <Section>
           <SectionHeader>Admin management</SectionHeader>
-          {/* Data Table with Search */}
-          <div className="mb-4 flex justify-between items-center">
-            <Input
-              placeholder="Search admins..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-[300px]"
-            />
-          </div>
-          <DataTable columns={columns} data={filteredData} />
+          {/* Data Table with built-in Search */}
+          <DataTable_Search columns={columns} data={adminData} searchPlaceholder="Search admins..." />
         </Section>
       </div>
       <div className="h-[100vh]" />
