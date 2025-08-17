@@ -1,10 +1,10 @@
-
 import PageHeader from "@/src/components/page/page-header";
 import PageTitle from "@/src/components/page/page-title";
 import PageWrapper from "@/src/components/page/page-wrapper";
 import { Section } from "@/src/components/Section";
 import { SectionHeader } from "@/src/components/SectionHeader";
 import { DataTable_Search } from "@/src/components/ui/data-table-search";
+import AdminInfoCard from "@/src/components/admin/AdminInfoCard";
 import Image from "next/image";
 import React from "react";
 
@@ -105,25 +105,7 @@ export default async function AdminDetailPage({ params }: any) {
               </div>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <span className="font-medium">Created By:</span>{" "}
-              {adminInfo.role === "Super Admin" ? "—" : adminInfo.createdBy}
-            </div>
-            <div>
-              <span className="font-medium">Level:</span> {adminInfo.level}
-            </div>
-            <div>
-              <span className="font-medium">Role:</span> {adminInfo.role}
-            </div>
-            <div>
-              <span className="font-medium">Created On:</span> {adminInfo.createdOn}
-            </div>
-            <div>
-              <span className="font-medium">Role Updated On:</span>{" "}
-              {adminInfo.roleUpdatedOn}
-            </div>
-          </div>
+          <AdminInfoCard adminInfo={adminInfo} />
         </Section>
 
         {/* Role Change History Table */}
