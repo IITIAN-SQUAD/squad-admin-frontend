@@ -1,11 +1,12 @@
+
 import PageHeader from "@/src/components/page/page-header";
 import PageTitle from "@/src/components/page/page-title";
 import PageWrapper from "@/src/components/page/page-wrapper";
+import { Section } from "@/src/components/Section";
+import { SectionHeader } from "@/src/components/SectionHeader";
+import { DataTable_Search } from "@/src/components/ui/data-table-search";
+import Image from "next/image";
 import React from "react";
-
-interface AdminDetailPageProps {
-  params: { id: string };
-}
 
 // Dummy data for demonstration
 const adminInfo = {
@@ -38,8 +39,48 @@ const adminAdded = [
   // ...more rows
 ];
 
-export default function AdminDetailPage({ params }: AdminDetailPageProps) {
-  const { id } = params;
+// Table columns for role change history
+const roleChangeColumns = [
+  {
+    accessorKey: "previous",
+    header: "Previous Role",
+  },
+  {
+    accessorKey: "after",
+    header: "New Role",
+  },
+  {
+    accessorKey: "changedBy",
+    header: "Changed By",
+  },
+  {
+    accessorKey: "changedOn",
+    header: "Changed On",
+  },
+];
+
+// Table columns for admins added
+const adminAddedColumns = [
+  {
+    accessorKey: "name",
+    header: "Name",
+  },
+  {
+    accessorKey: "email",
+    header: "Email",
+  },
+  {
+    accessorKey: "date",
+    header: "Date Added",
+  },
+];
+
+interface AdminDetailPageProps {
+  params: { id: string };
+}
+
+export default async function AdminDetailPage({ params }: any) {
+  const { id } = await params;
   const isSuperAdmin = adminInfo.role === "Super Admin";
 
   return (
@@ -47,10 +88,10 @@ export default function AdminDetailPage({ params }: AdminDetailPageProps) {
       <PageHeader title={`Admin Detail`} />
       <PageWrapper>
         <PageTitle>Admin Details</PageTitle>
-        {/* Listed Data Section */}
-        <section className="mb-8">
+        <Section>
+          <SectionHeader>Profile</SectionHeader>
           <div className="flex items-center gap-6 mb-4">
-            <img
+            <Image
               src={adminInfo.image}
               alt={adminInfo.name}
               width={64}
@@ -83,75 +124,28 @@ export default function AdminDetailPage({ params }: AdminDetailPageProps) {
               {adminInfo.roleUpdatedOn}
             </div>
           </div>
-        </section>
+        </Section>
 
         {/* Role Change History Table */}
-        <section className="mb-8">
-          <h2 className="text-md font-semibold mb-4">Role Change History</h2>
-          {/* Table structure */}
-          <div className="rounded-md border overflow-x-auto">
-            <table className="min-w-full">
-              <thead className="bg-muted">
-                <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">
-                    Previous Role
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">
-                    New Role
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">
-                    Changed By
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">
-                    Changed On
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {roleChangeHistory.map((item, idx) => (
-                  <tr key={idx} className="border-b">
-                    <td className="px-4 py-2 text-sm">{item.previous}</td>
-                    <td className="px-4 py-2 text-sm">{item.after}</td>
-                    <td className="px-4 py-2 text-sm">{item.changedBy}</td>
-                    <td className="px-4 py-2 text-sm">{item.changedOn}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
+        <Section>
+          <SectionHeader>Role Change History</SectionHeader>
+          <DataTable_Search
+            columns={roleChangeColumns}
+            data={roleChangeHistory}
+            searchPlaceholder="Search role changes..."
+          />
+        </Section>
 
         {/* Admin Added Table (only for super admin) */}
         {isSuperAdmin && (
-          <section>
-            <h2 className="text-md font-semibold mb-4">Admins Added</h2>
-            <div className="rounded-md border overflow-x-auto">
-              <table className="min-w-full">
-                <thead className="bg-muted">
-                  <tr>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">
-                      Name
-                    </th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">
-                      Email
-                    </th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">
-                      Date Added
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {adminAdded.map((item, idx) => (
-                    <tr key={idx} className="border-b">
-                      <td className="px-4 py-2 text-sm">{item.name}</td>
-                      <td className="px-4 py-2 text-sm">{item.email}</td>
-                      <td className="px-4 py-2 text-sm">{item.date}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
+          <Section>
+            <SectionHeader>Admins Added</SectionHeader>
+            <DataTable_Search
+              columns={adminAddedColumns}
+              data={adminAdded}
+              searchPlaceholder="Search added admins..."
+            />
+          </Section>
         )}
       </PageWrapper>
     </>
