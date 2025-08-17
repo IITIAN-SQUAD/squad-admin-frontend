@@ -1,14 +1,6 @@
 "use client"
 
 import React from "react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { useReactTable, getCoreRowModel, getFilteredRowModel, flexRender, ColumnDef } from "@tanstack/react-table";
 import { Input } from "@/components/ui/input";
 import { DataTable } from "@/components/ui/data-table";

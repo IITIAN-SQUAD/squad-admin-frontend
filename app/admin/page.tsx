@@ -1,74 +1,14 @@
-"use client"
+"use client";
 
 import { AnalyticsCard } from "@/src/components/AnalyticsCard";
 import { Section } from "@/src/components/Section";
 import { SectionHeader } from "@/src/components/SectionHeader";
 import React from "react";
 import { User, Shield, Settings } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { DataTable_Search } from "@/src/components/ui/data-table-search";
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
-import Image from "next/image";
-import Link from "next/link";
-
-// Table columns definition
-const columns = [
-  {
-    accessorKey: "image",
-    header: "Image",
-    cell: ({ row }: any) => (
-            <Image
-        src={row.original.image}
-        alt={row.original.name}
-        width={32}
-        height={32}
-        className="rounded-full"
-      />
-    ),
-  },
-  {
-    accessorKey: "name",
-    header: "Name",
-    cell: ({ row }: any) => <Link href={`/admin/${row.original.id}`} className="hover:underline">{row.original.name}</Link>,
-  },
-  {
-    accessorKey: "email",
-    header: "Email",
-  },
-  {
-    accessorKey: "createdBy",
-    header: "Created By",
-  },
-  {
-    accessorKey: "level",
-    header: "Level",
-  },
-  {
-    accessorKey: "role",
-    header: "Role",
-  },
-  {
-    accessorKey: "createdOn",
-    header: "Created On",
-  },
-  {
-    id: "actions",
-    header: "",
-    cell: ({ row }: any) => (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="w-8 h-8">
-            <Settings className="w-5 h-5" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem>Disable</DropdownMenuItem>
-          <DropdownMenuItem>Update Role</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    ),
-  },
-];
+import PageHeader from "@/src/components/page/page-header";
+import { TABLE_COLUMNS } from "@/assets/constants/table-columns";
+import PageTitle from "@/src/components/page/page-title";
 
 // Dummy data
 const adminData = [
@@ -90,18 +30,14 @@ const adminData = [
     role: "Admin",
     createdOn: "2024-05-15",
   },
-  // ...add more rows as needed
 ];
 
 export default function AdminPage() {
   return (
     <>
-      <header className="w-full border-b px-6 py-4 flex items-center bg-background sticky top-0 z-50">
-        <h1 className="text-sm font-medium">Admin List</h1>
-        {/* Add nav links or actions here if needed */}
-      </header>
+      <PageHeader title={"Admin Listing"}></PageHeader>
       <div className="p-8">
-        <h1 className="text-xl font-bold mb-4">Admin Listing</h1>
+        <PageTitle>Admin Listing</PageTitle>
         {/* Analytics Section */}
         <Section>
           <SectionHeader>Analytics</SectionHeader>
@@ -114,7 +50,7 @@ export default function AdminPage() {
         <Section>
           <SectionHeader>Admin management</SectionHeader>
           {/* Data Table with built-in Search */}
-          <DataTable_Search columns={columns} data={adminData} searchPlaceholder="Search admins..." />
+          <DataTable_Search columns={TABLE_COLUMNS.adminListing} data={adminData} searchPlaceholder="Search admins..." />
         </Section>
       </div>
       <div className="h-[100vh]" />
