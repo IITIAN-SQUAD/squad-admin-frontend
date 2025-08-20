@@ -72,10 +72,10 @@ export default function AdminPage() {
                   <Label htmlFor="password">Password</Label>
                   <Input id="password" name="password" type="password" placeholder="Password" required />
                 </div>
-                <div className="space-y-3">
+                <div className="space-y-3 mb-6">
                   <Label htmlFor="role">Role</Label>
                   <Select name="role" required>
-                    <SelectTrigger id="role">
+                    <SelectTrigger id="role" className="w-full">
                       <SelectValue placeholder="Select role" />
                     </SelectTrigger>
                     <SelectContent>
