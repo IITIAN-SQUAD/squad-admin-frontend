@@ -4,6 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { X } from "lucide-react";
 
 interface Article {
   id: string | number;
@@ -28,6 +29,18 @@ export default function CreateCategoryForm({ articles, onClose }: CreateCategory
     () => articles.filter(a => selected[a.id]),
     [articles, selected]
   );
+
+  // compact display: if concatenated titles get long, show count instead
+  const selectedDisplay = React.useMemo(() => {
+    if (selectedItems.length === 0) return "Select articles";
+    const preview = selectedItems.map(i => i.title).slice(0, 3).join(", ");
+    const fullText = selectedItems.map(i => i.title).join(", ");
+    const MAX_CHARS = 45;
+    if (fullText.length > MAX_CHARS) {
+      return `${selectedItems.length} selected`;
+    }
+    return selectedItems.length > 3 ? `${preview} +${selectedItems.length - 3}` : preview;
+  }, [selectedItems]);
 
   const filteredArticles = React.useMemo(() => {
     if (!query.trim()) return articles;
@@ -67,15 +80,38 @@ export default function CreateCategoryForm({ articles, onClose }: CreateCategory
             <div className="text-xs text-muted-foreground">Type to search and select articles</div>
           </div>
 
+          {/* Selected badges */}
+          <div className="flex flex-wrap gap-2 mb-2">
+            {selectedItems.map(item => (
+              <div
+                key={item.id}
+                className="inline-flex items-center gap-2 bg-muted px-2 py-1 rounded-full text-xs max-w-[220px] overflow-hidden"
+              >
+                <span className="truncate block max-w-[160px]">{item.title}</span>
+                <button
+                  type="button"
+                  aria-label={`Remove ${item.title}`}
+                  onClick={() => toggle(item.id)}
+                  className="inline-flex items-center justify-center w-5 h-5 rounded-full hover:bg-muted/80"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+            {selectedItems.length === 0 && (
+              <div className="text-sm text-muted-foreground">No articles selected</div>
+            )}
+          </div>
+
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" className="w-full justify-between">
-                <span className="text-sm">
-                  {selectedItems.length > 0
-                    ? selectedItems.map(i => i.title).slice(0, 3).join(", ") + (selectedItems.length > 3 ? ` +${selectedItems.length - 3}` : "")
-                    : "Select articles"}
+              <Button variant="outline" className="w-full justify-between overflow-hidden">
+                <span className="text-sm truncate block max-w-[220px]">
+                  Select articles
                 </span>
-                <span className="text-xs text-muted-foreground">{selectedItems.length > 0 ? `${selectedItems.length} selected` : ""}</span>
+                <span className="text-xs text-muted-foreground ml-2">
+                  {selectedItems.length > 0 ? `${selectedItems.length} selected` : ""}
+                </span>
               </Button>
             </PopoverTrigger>
 
