@@ -10,6 +10,8 @@ import PageHeader from "@/src/components/page/page-header";
 import { TABLE_COLUMNS } from "@/assets/constants/table-columns";
 import PageTitle from "@/src/components/page/page-title";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 // Dummy data
 const adminData = [
@@ -40,9 +42,27 @@ export default function AdminPage() {
       <div className="p-8">
         <div className="flex justify-between">
           <PageTitle>Admin Listing</PageTitle>
-          <Button className="hover:cursor-pointer focus:ring-yellow-500 focus:ring-3 focus:ring-offset-2">
-            <span><Plus /></span>Create Admin
-          </Button>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button className="hover:cursor-pointer focus:ring-yellow-500 focus:ring-3 focus:ring-offset-2">
+                <span><Plus /></span>Create Admin
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Create Admin</DialogTitle>
+              </DialogHeader>
+              <form className="space-y-4">
+                <Input placeholder="Name" name="name" />
+                <Input placeholder="Email" name="email" type="email" />
+                <Input placeholder="Role" name="role" />
+                {/* Add more fields as needed */}
+                <DialogFooter>
+                  <Button type="submit">Create</Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
         <Section>
           <SectionHeader>Analytics</SectionHeader>
