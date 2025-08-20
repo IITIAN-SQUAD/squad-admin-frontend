@@ -139,19 +139,49 @@ export const TABLE_COLUMNS = {
     {
       id: "actions",
       header: "",
-      cell: ({ row }: any) => (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="w-8 h-8">
-              <Settings className="w-5 h-5" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem>View Category</DropdownMenuItem>
-            <DropdownMenuItem>Delete Category</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      ),
+      cell: (props: any) => {
+        // stateful cell component (renders per-row)
+        const { row } = props;
+        const [open, setOpen] = useState(false);
+
+        const handleDelete = () => {
+          // implement delete logic here, e.g. call API with row.original.id
+          // console.log("Delete category", row.original.id);
+          setOpen(false);
+        };
+
+        return (
+          <>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="w-8 h-8">
+                  <Settings className="w-5 h-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem>
+                  {/* view category - replace with link/action as needed */}
+                  View Category
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setOpen(true)}>
+                  Delete Category
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <ConfirmDialog
+              isOpen={open}
+              onOpenChange={setOpen}
+              title="Delete Category"
+              description="Are you sure you want to delete this category? This action cannot be undone."
+              confirmLabel="Delete"
+              cancelLabel="Cancel"
+              onConfirm={handleDelete}
+              variant="destructive"
+            />
+          </>
+        );
+      },
     },
   ],
   blogListing: [
