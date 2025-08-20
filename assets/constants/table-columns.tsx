@@ -10,6 +10,47 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Settings } from "lucide-react";
+import { useState } from "react";
+import ConfirmDialog from "@/src/components/dialogs/ConfirmDialog";
+
+// Cell component for blog management actions
+const BlogManagementActions = ({ row }: { row: any }) => {
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+  const handleDelete = () => {
+    console.log("Deleting blog:", row.original.id);
+    // Implement delete logic here
+    setIsDeleteDialogOpen(false);
+  };
+
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon" className="w-8 h-8">
+            <Settings className="w-5 h-5" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem>View</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setIsDeleteDialogOpen(true)}>
+            Remove
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <ConfirmDialog
+        isOpen={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        title="Remove Article"
+        description="Are you sure you want to remove this article? This action cannot be undone."
+        confirmLabel="Remove"
+        onConfirm={handleDelete}
+        variant="destructive"
+      />
+    </>
+  );
+};
 
 export const TABLE_COLUMNS = {
   adminListing: [
@@ -208,19 +249,7 @@ export const TABLE_COLUMNS = {
     {
       id: "actions",
       header: "",
-      cell: ({ row }: any) => (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="w-8 h-8">
-              <Settings className="w-5 h-5" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem>View</DropdownMenuItem>
-            <DropdownMenuItem>Remove</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      ),
+      cell: BlogManagementActions,
     },
   ],
 };
