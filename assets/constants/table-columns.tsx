@@ -108,4 +108,119 @@ export const TABLE_COLUMNS = {
       ),
     },
   ],
+  blogListing: [
+    {
+      accessorKey: "srNo",
+      header: "Sr No",
+    },
+    {
+      accessorKey: "heading",
+      header: "Article Heading",
+    },
+    {
+      accessorKey: "bannerImage",
+      header: "Banner Image",
+      cell: ({ row }: any) => (
+        <Image
+          src={row.original.bannerImage}
+          alt={row.original.heading}
+          width={80}
+          height={45}
+          className="rounded object-cover"
+        />
+      ),
+    },
+    {
+      accessorKey: "createdOn",
+      header: "Created On",
+    },
+    {
+      accessorKey: "visibility",
+      header: "Visibility",
+      cell: ({ row }: any) => (
+        <span className={row.original.visibility === "Published" ? "text-green-600" : "text-amber-600"}>
+          {row.original.visibility}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "createdBy",
+      header: "Created By",
+    },
+    {
+      id: "actions",
+      header: "",
+      cell: ({ row }: any) => (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="w-8 h-8">
+              <Settings className="w-5 h-5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem>View Article</DropdownMenuItem>
+            <DropdownMenuItem>Edit Article</DropdownMenuItem>
+            <DropdownMenuItem>Delete Article</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ),
+    },
+  ],
+  blogManagementListing: [
+    {
+      accessorKey: "srNo",
+      header: "Sr No",
+    },
+    {
+      accessorKey: "heading",
+      header: "Article Heading",
+    },
+    {
+      accessorKey: "bannerImage",
+      header: "Banner Image",
+      cell: ({ row }: any) => (
+        <Image
+          src={row.original.bannerImage}
+          alt={row.original.heading}
+          width={80}
+          height={45}
+          className="rounded object-cover"
+        />
+      ),
+    },
+    {
+      accessorKey: "createdOn",
+      header: "Created On",
+    },
+    {
+      accessorKey: "visibility",
+      header: "Visibility",
+      cell: ({ row }: any) => (
+        <span className={row.original.visibility === "Published" ? "text-green-600" : "text-amber-600"}>
+          {row.original.visibility}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "createdBy",
+      header: "Created By",
+    },
+    {
+      id: "actions",
+      header: "",
+      cell: ({ row }: any) => (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="w-8 h-8">
+              <Settings className="w-5 h-5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem>View</DropdownMenuItem>
+            <DropdownMenuItem>Remove</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ),
+    },
+  ],
 };
