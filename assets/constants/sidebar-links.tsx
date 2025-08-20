@@ -1,4 +1,4 @@
-import { UserLock } from "lucide-react";
+import { UserLock, Group } from "lucide-react";
 
 export const SIDEBAR_LINKS = {
     adminManagement: [
@@ -6,6 +6,13 @@ export const SIDEBAR_LINKS = {
             title: "Admin List",
             url: "/admin",
             icon: UserLock
+        }
+    ],
+    contentManagement: [
+        {
+            title: "Category listing",
+            url: "/content/category-listing",
+            icon: Group
         }
     ]
 }

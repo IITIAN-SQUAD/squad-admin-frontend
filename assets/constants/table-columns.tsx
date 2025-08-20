@@ -73,4 +73,39 @@ export const TABLE_COLUMNS = {
       ),
     },
   ],
+  categoryListing: [
+    {
+      accessorKey: "name",
+      header: "Category Name",
+    },
+    {
+      accessorKey: "createdOn",
+      header: "Created On",
+    },
+    {
+      accessorKey: "totalBlogs",
+      header: "Total Blogs",
+    },
+    {
+      accessorKey: "createdBy",
+      header: "Created By",
+    },
+    {
+      id: "actions",
+      header: "",
+      cell: ({ row }: any) => (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="w-8 h-8">
+              <Settings className="w-5 h-5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem>View Category</DropdownMenuItem>
+            <DropdownMenuItem>Delete Category</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ),
+    },
+  ],
 };

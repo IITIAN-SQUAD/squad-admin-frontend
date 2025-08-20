@@ -70,6 +70,23 @@ export default function RootLayout({
                         </SidebarMenu>
                       </SidebarGroupContent>
                     </SidebarGroup>
+                    <SidebarGroup>
+                      <SidebarGroupLabel>Content management</SidebarGroupLabel>
+                      <SidebarGroupContent>
+                        <SidebarMenu>
+                          {SIDEBAR_LINKS.contentManagement.map((item) => (
+                            <SidebarMenuItem key={item.title}>
+                              <SidebarMenuButton asChild>
+                                <a href={item.url}>
+                                  <item.icon />
+                                  <span>{item.title}</span>
+                                </a>
+                              </SidebarMenuButton>
+                            </SidebarMenuItem>
+                          ))}
+                        </SidebarMenu>
+                      </SidebarGroupContent>
+                    </SidebarGroup>
                   </SidebarContent>
                   <SidebarFooter>
                     <div className="flex items-start gap-4 px-4 py-4">
