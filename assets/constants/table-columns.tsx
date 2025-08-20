@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -118,6 +118,11 @@ export const TABLE_COLUMNS = {
     {
       accessorKey: "name",
       header: "Category Name",
+      cell: ({ row }: any) => (
+        <Link href={`/content/category-specification/${row.original.id}`} className="hover:underline">
+          {row.original.name}
+        </Link>
+      ),
     },
     {
       accessorKey: "createdOn",
@@ -179,7 +184,13 @@ export const TABLE_COLUMNS = {
       accessorKey: "visibility",
       header: "Visibility",
       cell: ({ row }: any) => (
-        <span className={row.original.visibility === "Published" ? "text-green-600" : "text-amber-600"}>
+        <span
+          className={
+            row.original.visibility === "Published"
+              ? "text-green-600"
+              : "text-amber-600"
+          }
+        >
           {row.original.visibility}
         </span>
       ),
@@ -237,7 +248,13 @@ export const TABLE_COLUMNS = {
       accessorKey: "visibility",
       header: "Visibility",
       cell: ({ row }: any) => (
-        <span className={row.original.visibility === "Published" ? "text-green-600" : "text-amber-600"}>
+        <span
+          className={
+            row.original.visibility === "Published"
+              ? "text-green-600"
+              : "text-amber-600"
+          }
+        >
           {row.original.visibility}
         </span>
       ),

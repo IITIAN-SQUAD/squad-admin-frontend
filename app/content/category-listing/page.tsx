@@ -11,6 +11,16 @@ import { DataTable_Search } from "@/src/components/ui/data-table-search";
 import { Dialog, DialogTrigger, DialogContent } from "@radix-ui/react-dialog";
 import { Plus, User, Shield } from "lucide-react";
 
+// dummy data
+const categoryList = [
+  {
+    name: 'dummy-category',
+    createdOn: '2024-06-01',
+    totalBlogs: 5,
+    createdBy: 'John Doe',
+  }
+] 
+
 export default function CategoryListingPage() {
   return (
     <>
@@ -38,7 +48,7 @@ export default function CategoryListingPage() {
 
         <Section>
           <SectionHeader>Category management</SectionHeader>
-          <DataTable_Search columns={TABLE_COLUMNS.categoryListing} data={[]} searchPlaceholder="Search categories..." />
+          <DataTable_Search columns={TABLE_COLUMNS.categoryListing} data={categoryList} searchPlaceholder="Search categories..." />
         </Section>
       </div>
       <div className="h-[100vh]" />
