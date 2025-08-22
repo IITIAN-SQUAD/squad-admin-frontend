@@ -6,7 +6,7 @@ import {
   TaskItem,
   HorizontalRule,
   StarterKit,
-  Placeholder,
+  Placeholder
 } from "novel";
 
 import { cx } from "class-variance-authority";
@@ -86,6 +86,13 @@ const starterKit = StarterKit.configure({
   }
 });
 
+import { Extension } from "@tiptap/core";
+import {Table} from "@tiptap/extension-table";
+import TableRow from "@tiptap/extension-table-row";
+import TableHeader from "@tiptap/extension-table-header";
+import TableCell from "@tiptap/extension-table-cell";
+
+
 export const defaultExtensions = [
   starterKit,
   placeholder,
@@ -95,4 +102,10 @@ export const defaultExtensions = [
   taskList,
   taskItem,
   horizontalRule,
+  Table.configure({
+    resizable: true,
+  }),
+  TableRow,
+  TableHeader,
+  TableCell,
 ];
