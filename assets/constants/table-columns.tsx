@@ -12,6 +12,52 @@ import { Button } from "@/components/ui/button";
 import { Settings } from "lucide-react";
 import { useState } from "react";
 import ConfirmDialog from "@/src/components/dialogs/ConfirmDialog";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogTrigger, DialogContent } from "@/components/ui/dialog";
+
+// Banner image cell with modal preview
+const BannerImageCell = ({ row }: any) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogTrigger asChild>
+          <Image
+            src={row.original.bannerImage}
+            alt={row.original.heading}
+            width={80}
+            height={45}
+            className="rounded-lg object-cover cursor-pointer"
+            onClick={() => setOpen(true)}
+          />
+        </DialogTrigger>
+        <DialogContent className="flex flex-col items-center">
+          <Image
+            src={row.original.bannerImage}
+            alt={row.original.heading}
+            width={400}
+            height={225}
+            className="rounded-lg object-cover"
+          />
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+};
+
+// Visibility badge cell
+const VisibilityBadgeCell = ({ row }: any) => (
+  <Badge
+    variant={'default'}
+    className={
+      row.original.visibility === "Published"
+        ? "bg-green-600 text-white"
+        : "bg-amber-500 text-white"
+    }
+  >
+    {row.original.visibility}
+  </Badge>
+);
 
 // Cell component for blog management actions
 const BlogManagementActions = ({ row }: { row: any }) => {
@@ -119,7 +165,10 @@ export const TABLE_COLUMNS = {
       accessorKey: "name",
       header: "Category Name",
       cell: ({ row }: any) => (
-        <Link href={`/content/category-specification/${row.original.id}`} className="hover:underline">
+        <Link
+          href={`/content/category-specification/${row.original.id}`}
+          className="hover:underline"
+        >
           {row.original.name}
         </Link>
       ),
@@ -196,15 +245,7 @@ export const TABLE_COLUMNS = {
     {
       accessorKey: "bannerImage",
       header: "Banner Image",
-      cell: ({ row }: any) => (
-        <Image
-          src={row.original.bannerImage}
-          alt={row.original.heading}
-          width={80}
-          height={45}
-          className="rounded object-cover"
-        />
-      ),
+      cell: BannerImageCell,
     },
     {
       accessorKey: "createdOn",
@@ -213,17 +254,7 @@ export const TABLE_COLUMNS = {
     {
       accessorKey: "visibility",
       header: "Visibility",
-      cell: ({ row }: any) => (
-        <span
-          className={
-            row.original.visibility === "Published"
-              ? "text-green-600"
-              : "text-amber-600"
-          }
-        >
-          {row.original.visibility}
-        </span>
-      ),
+      cell: VisibilityBadgeCell,
     },
     {
       accessorKey: "createdBy",
