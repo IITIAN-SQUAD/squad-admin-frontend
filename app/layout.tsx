@@ -18,6 +18,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SIDEBAR_LINKS } from "@/assets/constants/sidebar-links";
 import { ThemeProvider } from "@/components/ui/theme-provider";
+import { FileText } from "lucide-react";
 
 const urbanist = Inter({
   variable: "--font-urbanist-sans",
@@ -72,7 +73,7 @@ export default function RootLayout({
                     </SidebarGroup>
                     <SidebarGroup>
                       <SidebarGroupLabel>Content management</SidebarGroupLabel>
-                      <SidebarGroupContent>
+                      <SidebarGroupContent className="space-y-2">
                         <SidebarMenu>
                           {SIDEBAR_LINKS.contentManagement.map((item) => (
                             <SidebarMenuItem key={item.title}>
@@ -84,6 +85,16 @@ export default function RootLayout({
                               </SidebarMenuButton>
                             </SidebarMenuItem>
                           ))}
+                        </SidebarMenu>
+                        <SidebarMenu>
+                          <SidebarMenuItem>
+                            <SidebarMenuButton asChild>
+                              <a href="/blog-management">
+                                <FileText />
+                                <span>Blog Management</span>
+                              </a>
+                            </SidebarMenuButton>
+                          </SidebarMenuItem>
                         </SidebarMenu>
                       </SidebarGroupContent>
                     </SidebarGroup>
