@@ -41,7 +41,7 @@ export default function RootLayout({
       <body className={urbanist.className}>
         <ThemeProvider
           attribute="class"
-          defaultTheme="dark"
+          defaultTheme="light"
           enableSystem
           disableTransitionOnChange
         >
@@ -49,7 +49,7 @@ export default function RootLayout({
             <div className="sidebar-wrapper">
               <SidebarProvider>
                 <Sidebar className="w-64 ">
-                  <SidebarHeader className="p-6">
+                  <SidebarHeader className="p-[14px] bg-yellow-500 px-6">
                     <span className="font-bold text-md">IITian Squad</span>
                   </SidebarHeader>
 
