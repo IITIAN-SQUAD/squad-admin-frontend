@@ -6,13 +6,14 @@ import { Button } from "@/components/ui/button";
 
 interface PageTitleProps {
   children: React.ReactNode;
+  disableMargin?: boolean;
 }
 
-export default function PageTitle({ children }: PageTitleProps) {
+export default function PageTitle({ children, disableMargin }: PageTitleProps) {
   const router = useRouter();
 
   return (
-    <div className="flex items-center gap-2 mb-4">
+    <div className={`flex items-center gap-2 ${disableMargin ? '' : 'mb-4'}`}>
       <Button
         variant="ghost"
         size="icon"
