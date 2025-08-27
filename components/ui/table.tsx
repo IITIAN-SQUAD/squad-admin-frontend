@@ -8,7 +8,7 @@ function Table({ className, ...props }: React.ComponentProps<"table"> & {maxheig
   return (
     <div
       data-slot="table-container"
-      className={`relative w-full overflow-x-auto ${props.maxheight ? `${props.maxheight}` : ''}`}
+      className={`relative w-full ${props.maxheight ? `${props.maxheight}` : ''}`}
     >
       <table
         data-slot="table"

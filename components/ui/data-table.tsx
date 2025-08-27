@@ -123,7 +123,7 @@ export function DataTable<TData, TValue>({
     }
 
     return (
-      <div className="flex items-center justify-end gap-4 h-12 z-50 border-t-1 px-2">
+      <div className="flex items-center justify-end gap-4 h-12 z-50 border-t-1 px-4">
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
@@ -196,58 +196,60 @@ export function DataTable<TData, TValue>({
   }
 
   return (
-    <Table className="relative" maxheight="max-h-[400px] rounded-md border">
-      {/* Sticky Header */}
-      <TableHeader className="sticky top-0 z-20 h-12 bg-black">
-        {table.getHeaderGroups().map((headerGroup) => (
-          <TableRow key={headerGroup.id} className="hover:bg-black">
-            {headerGroup.headers.map((header) => (
-              <TableHead key={header.id} className="border-b-1 text-white">
-                {header.isPlaceholder
-                  ? null
-                  : flexRender(
-                      header.column.columnDef.header,
-                      header.getContext()
-                    )}
-              </TableHead>
-            ))}
-          </TableRow>
-        ))}
-      </TableHeader>
-
-      {/* Scrollable Rows */}
-      <TableBody>
-        {table.getRowModel().rows?.length ? (
-          table.getRowModel().rows.map((row) => (
-            <TableRow
-              key={row.id}
-              data-state={row.getIsSelected() && "selected"}
-            >
-              {row.getVisibleCells().map((cell) => (
-                <TableCell key={cell.id}>
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </TableCell>
+    <div className="max-h-[300px] overflow-auto">
+      <Table className="relative" maxheight="rounded-md">
+        {/* Sticky Header */}
+        <TableHeader className="sticky top-0 z-20 h-12 bg-black">
+          {table.getHeaderGroups().map((headerGroup) => (
+            <TableRow key={headerGroup.id} className="hover:bg-black">
+              {headerGroup.headers.map((header) => (
+                <TableHead key={header.id} className="text-white first:rounded-l-md last:rounded-r-md">
+                  {header.isPlaceholder
+                    ? null
+                    : flexRender(
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
+                </TableHead>
               ))}
             </TableRow>
-          ))
-        ) : (
-          <TableRow>
-            <TableCell
-              colSpan={columnsWithSelection.length}
-              className="h-24 text-center"
-            >
-              No results.
+          ))}
+        </TableHeader>
+
+        {/* Scrollable Rows */}
+        <TableBody>
+          {table.getRowModel().rows?.length ? (
+            table.getRowModel().rows.map((row) => (
+              <TableRow
+                key={row.id}
+                data-state={row.getIsSelected() && "selected"}
+              >
+                {row.getVisibleCells().map((cell) => (
+                  <TableCell key={cell.id}>
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell
+                colSpan={columnsWithSelection.length}
+                className="h-24 text-center"
+              >
+                No results.
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+        <TableFooter className="sticky bottom-0 z-20 bg-background border-0">
+          <TableRow className="p-0 border-0">
+            <TableCell colSpan={columnsWithSelection.length} className="p-0">
+              <Pagination table={table} />
             </TableCell>
           </TableRow>
-        )}
-      </TableBody>
-      <TableFooter className="sticky bottom-0 z-20 bg-background">
-        <TableRow className="p-0 border-0">
-          <TableCell colSpan={columnsWithSelection.length} className="p-0">
-            <Pagination table={table} />
-          </TableCell>
-        </TableRow>
-      </TableFooter>
-    </Table>
+        </TableFooter>
+      </Table>
+    </div>
   );
 }
