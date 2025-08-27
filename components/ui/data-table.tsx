@@ -122,7 +122,7 @@ export function DataTable<TData, TValue>({
     }
 
     return (
-      <div className="flex items-center justify-end gap-4 px-3 h-12 z-50 border-t-1">
+      <div className="flex items-center justify-end gap-4 h-12 z-50 border-t-1 px-2">
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
@@ -196,13 +196,13 @@ export function DataTable<TData, TValue>({
 
   return (
     <div className="rounded-md overflow-hidden border relative">
-      <Table className="relative" maxHeight="max-h-[400px]">
+      <Table className="relative" maxheight="max-h-[400px]">
         {/* Sticky Header */}
         <TableHeader className="sticky top-0 z-20 bg-background h-12">
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id}>
               {headerGroup.headers.map((header) => (
-                <TableHead key={header.id}>
+                <TableHead key={header.id} className="border-b-1">
                   {header.isPlaceholder
                     ? null
                     : flexRender(
@@ -241,11 +241,14 @@ export function DataTable<TData, TValue>({
             </TableRow>
           )}
         </TableBody>
+        <tfoot className="sticky bottom-0 z-20 bg-background">
+          <TableRow className="p-0">
+            <TableCell colSpan={columnsWithSelection.length} className="p-0">
+              <Pagination table={table} />
+            </TableCell>
+          </TableRow>
+        </tfoot>
       </Table>
-      {/* Sticky Footer */}
-      <div className="sticky bottom-0 z-20 bg-background w-full">
-        <Pagination table={table} />
-      </div>
     </div>
   );
 }
