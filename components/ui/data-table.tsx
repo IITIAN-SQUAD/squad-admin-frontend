@@ -196,7 +196,9 @@ export function DataTable<TData, TValue>({
 
   return (
     <div className="rounded-md overflow-hidden border relative">
+      <div className="absolute bottom-0 left-0 right-0 h-0 border-b bg-border z-50 top-12" />
       <Table className="relative" maxheight="max-h-[400px]">
+        
         {/* Sticky Header */}
         <TableHeader className="sticky top-0 z-20 bg-background h-12">
           {table.getHeaderGroups().map((headerGroup) => (
