@@ -30,6 +30,60 @@ const blogList = [
     createdBy: "Jane Smith",
     id: 2,
   },
+  {
+    srNo: 3,
+    heading: "Top programming languages for engineers",
+    bannerImage: "/blog3.jpg",
+    createdOn: "2024-05-20",
+    visibility: "Published",
+    createdBy: "Amit Kumar",
+    id: 3,
+  },
+  {
+    srNo: 4,
+    heading: "Time management tips for competitive exams",
+    bannerImage: "/blog4.jpg",
+    createdOn: "2024-04-15",
+    visibility: "Published",
+    createdBy: "Priya Patel",
+    id: 4,
+  },
+  {
+    srNo: 5,
+    heading: "Understanding Physics: Core concepts",
+    bannerImage: "/blog5.jpg",
+    createdOn: "2024-03-30",
+    visibility: "Draft",
+    createdBy: "Ravi Singh",
+    id: 5,
+  },
+  {
+    srNo: 6,
+    heading: "Chemistry tricks: Memorize the periodic table",
+    bannerImage: "/blog6.jpg",
+    createdOn: "2024-02-10",
+    visibility: "Published",
+    createdBy: "Neha Verma",
+    id: 6,
+  },
+  {
+    srNo: 7,
+    heading: "Interview preparation: Dos and Don'ts",
+    bannerImage: "/blog7.jpg",
+    createdOn: "2024-01-25",
+    visibility: "Published",
+    createdBy: "Suman Rao",
+    id: 7,
+  },
+  {
+    srNo: 8,
+    heading: "Study routines that actually work",
+    bannerImage: "/blog8.jpg",
+    createdOn: "2023-12-18",
+    visibility: "Draft",
+    createdBy: "Karan Mehta",
+    id: 8,
+  },
 ];
 
 export default function BlogManagementPage() {
@@ -62,7 +116,6 @@ export default function BlogManagementPage() {
           />
         </Section>
       </div>
-      <div className="h-[100vh]" />
     </>
   );
 }

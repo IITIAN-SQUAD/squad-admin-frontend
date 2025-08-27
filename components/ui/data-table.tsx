@@ -122,7 +122,7 @@ export function DataTable<TData, TValue>({
     }
 
     return (
-      <div className="flex items-center justify-end gap-4 px-3 py-2 bg-muted/40">
+      <div className="flex items-center justify-end gap-4 px-3 h-12 z-50 border-t-1">
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
@@ -136,7 +136,10 @@ export function DataTable<TData, TValue>({
 
           {pages.map((p, idx) =>
             p === "dots" ? (
-              <span key={`dots-${idx}`} className="px-2 text-sm text-muted-foreground">
+              <span
+                key={`dots-${idx}`}
+                className="px-2 text-sm text-muted-foreground"
+              >
                 …
               </span>
             ) : (
@@ -155,7 +158,9 @@ export function DataTable<TData, TValue>({
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => table.setPageIndex(Math.min(pageCount - 1, pageIndex + 1))}
+            onClick={() =>
+              table.setPageIndex(Math.min(pageCount - 1, pageIndex + 1))
+            }
             disabled={!table.getCanNextPage()}
             aria-label="Next"
           >
@@ -165,7 +170,8 @@ export function DataTable<TData, TValue>({
 
         <div className="flex items-center gap-4">
           <div className="text-sm text-muted-foreground">
-            Page <strong>{pageIndex + 1}</strong> of <strong>{pageCount || 1}</strong>
+            Page <strong>{pageIndex + 1}</strong> of{" "}
+            <strong>{pageCount || 1}</strong>
           </div>
 
           <Select
@@ -189,58 +195,57 @@ export function DataTable<TData, TValue>({
   }
 
   return (
-    <div className="overflow-hidden rounded-md border">
-      {/* use ScrollArea for shadcn scroll wrapper with max height */}
-      <ScrollArea className="max-h-72">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                    </TableHead>
-                  );
-                })}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={columnsWithSelection.length}
-                  className="h-24 text-center"
-                >
-                  No results.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </ScrollArea>
+    <div className="rounded-md overflow-hidden border relative">
+      <Table className="relative" maxHeight="max-h-[400px]">
+        {/* Sticky Header */}
+        <TableHeader className="sticky top-0 z-20 bg-background h-12">
+          {table.getHeaderGroups().map((headerGroup) => (
+            <TableRow key={headerGroup.id}>
+              {headerGroup.headers.map((header) => (
+                <TableHead key={header.id}>
+                  {header.isPlaceholder
+                    ? null
+                    : flexRender(
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
+                </TableHead>
+              ))}
+            </TableRow>
+          ))}
+        </TableHeader>
 
-      {/* REPLACED: use the new Pagination component */}
-      <Pagination table={table} />
+        {/* Scrollable Rows */}
+        <TableBody>
+          {table.getRowModel().rows?.length ? (
+            table.getRowModel().rows.map((row) => (
+              <TableRow
+                key={row.id}
+                data-state={row.getIsSelected() && "selected"}
+              >
+                {row.getVisibleCells().map((cell) => (
+                  <TableCell key={cell.id}>
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell
+                colSpan={columnsWithSelection.length}
+                className="h-24 text-center"
+              >
+                No results.
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+      {/* Sticky Footer */}
+      <div className="sticky bottom-0 z-20 bg-background w-full">
+        <Pagination table={table} />
+      </div>
     </div>
   );
 }
