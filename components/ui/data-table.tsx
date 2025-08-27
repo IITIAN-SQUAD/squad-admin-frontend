@@ -196,7 +196,7 @@ export function DataTable<TData, TValue>({
   }
 
   return (
-    <div className="max-h-[300px] overflow-auto">
+    <div className="max-h-[450px] overflow-auto">
       <Table className="relative" maxheight="rounded-md">
         {/* Sticky Header */}
         <TableHeader className="sticky top-0 z-20 h-12 bg-black">

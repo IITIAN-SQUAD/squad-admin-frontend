@@ -74,7 +74,6 @@ export default function CategoryListingPage() {
           />
         </Section>
       </div>
-      <div className="h-[100vh]" />
     </>
   );
 }

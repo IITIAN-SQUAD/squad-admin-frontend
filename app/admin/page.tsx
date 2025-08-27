@@ -75,7 +75,6 @@ export default function AdminPage() {
           <DataTable_Search columns={TABLE_COLUMNS.adminListing} data={adminData} searchPlaceholder="Search admins..." />
         </Section>
       </div>
-      <div className="h-[100vh]" />
     </>
   );
 }
