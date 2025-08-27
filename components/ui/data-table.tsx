@@ -195,16 +195,16 @@ export function DataTable<TData, TValue>({
   }
 
   return (
-    <div className="rounded-md overflow-hidden border relative">
-      <div className="absolute bottom-0 left-0 right-0 h-0 border-b bg-border z-50 top-12" />
-      <Table className="relative" maxheight="max-h-[400px]">
+    <div className="overflow-hidden relative">
+      {/* <div className="absolute bottom-0 left-0 right-0 h-0 border-b bg-border z-50 top-12" /> */}
+      <Table className="relative" maxheight="max-h-[400px] rounded-md border">
         
         {/* Sticky Header */}
-        <TableHeader className="sticky top-0 z-20 bg-background h-12">
+        <TableHeader className="sticky top-0 z-20 h-12 bg-black">
           {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id}>
+            <TableRow key={headerGroup.id} className="hover:bg-black">
               {headerGroup.headers.map((header) => (
-                <TableHead key={header.id} className="border-b-1">
+                <TableHead key={header.id} className="border-b-1 text-white">
                   {header.isPlaceholder
                     ? null
                     : flexRender(
