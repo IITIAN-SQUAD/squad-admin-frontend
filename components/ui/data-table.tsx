@@ -13,6 +13,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
@@ -195,62 +196,58 @@ export function DataTable<TData, TValue>({
   }
 
   return (
-    <div className="overflow-hidden relative">
-      {/* <div className="absolute bottom-0 left-0 right-0 h-0 border-b bg-border z-50 top-12" /> */}
-      <Table className="relative" maxheight="max-h-[400px] rounded-md border">
-        
-        {/* Sticky Header */}
-        <TableHeader className="sticky top-0 z-20 h-12 bg-black">
-          {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id} className="hover:bg-black">
-              {headerGroup.headers.map((header) => (
-                <TableHead key={header.id} className="border-b-1 text-white">
-                  {header.isPlaceholder
-                    ? null
-                    : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
-                </TableHead>
+    <Table className="relative" maxheight="max-h-[400px] rounded-md border">
+      {/* Sticky Header */}
+      <TableHeader className="sticky top-0 z-20 h-12 bg-black">
+        {table.getHeaderGroups().map((headerGroup) => (
+          <TableRow key={headerGroup.id} className="hover:bg-black">
+            {headerGroup.headers.map((header) => (
+              <TableHead key={header.id} className="border-b-1 text-white">
+                {header.isPlaceholder
+                  ? null
+                  : flexRender(
+                      header.column.columnDef.header,
+                      header.getContext()
+                    )}
+              </TableHead>
+            ))}
+          </TableRow>
+        ))}
+      </TableHeader>
+
+      {/* Scrollable Rows */}
+      <TableBody>
+        {table.getRowModel().rows?.length ? (
+          table.getRowModel().rows.map((row) => (
+            <TableRow
+              key={row.id}
+              data-state={row.getIsSelected() && "selected"}
+            >
+              {row.getVisibleCells().map((cell) => (
+                <TableCell key={cell.id}>
+                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                </TableCell>
               ))}
             </TableRow>
-          ))}
-        </TableHeader>
-
-        {/* Scrollable Rows */}
-        <TableBody>
-          {table.getRowModel().rows?.length ? (
-            table.getRowModel().rows.map((row) => (
-              <TableRow
-                key={row.id}
-                data-state={row.getIsSelected() && "selected"}
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))
-          ) : (
-            <TableRow>
-              <TableCell
-                colSpan={columnsWithSelection.length}
-                className="h-24 text-center"
-              >
-                No results.
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-        <tfoot className="sticky bottom-0 z-20 bg-background">
-          <TableRow className="p-0">
-            <TableCell colSpan={columnsWithSelection.length} className="p-0">
-              <Pagination table={table} />
+          ))
+        ) : (
+          <TableRow>
+            <TableCell
+              colSpan={columnsWithSelection.length}
+              className="h-24 text-center"
+            >
+              No results.
             </TableCell>
           </TableRow>
-        </tfoot>
-      </Table>
-    </div>
+        )}
+      </TableBody>
+      <TableFooter className="sticky bottom-0 z-20 bg-background">
+        <TableRow className="p-0 border-0">
+          <TableCell colSpan={columnsWithSelection.length} className="p-0">
+            <Pagination table={table} />
+          </TableCell>
+        </TableRow>
+      </TableFooter>
+    </Table>
   );
 }
