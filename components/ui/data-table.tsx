@@ -48,32 +48,36 @@ export function DataTable<TData, TValue>({
       {
         id: "select",
         header: ({ table }) => (
-          <Checkbox
-            aria-label="Select all"
-            checked={table.getIsAllRowsSelected()}
-            onCheckedChange={(checked) =>
-              // adapt to tanstack's native event handler
-              table.getToggleAllRowsSelectedHandler()({
-                target: { checked },
-              } as unknown as React.ChangeEvent<HTMLInputElement>)
-            }
-            className="align-middle"
-          />
+          <div className="w-12 flex items-center justify-center">
+            <Checkbox
+              aria-label="Select all"
+              checked={table.getIsAllRowsSelected()}
+              onCheckedChange={(checked) =>
+                // adapt to tanstack's native event handler
+                table.getToggleAllRowsSelectedHandler()({
+                  target: { checked },
+                } as unknown as React.ChangeEvent<HTMLInputElement>)
+              }
+              className="accent-blue-500 align-middle"
+            />
+          </div>
         ),
         cell: ({ row }) => (
-          <Checkbox
-            aria-label={`Select row ${row.index + 1}`}
-            checked={row.getIsSelected()}
-            onCheckedChange={(checked) =>
-              row.getToggleSelectedHandler()({
-                target: { checked },
-              } as unknown as React.ChangeEvent<HTMLInputElement>)
-            }
-            className="align-middle"
-          />
+          <div className="w-12 flex items-center justify-center">
+            <Checkbox
+              aria-label={`Select row ${row.index + 1}`}
+              checked={row.getIsSelected()}
+              onCheckedChange={(checked) =>
+                row.getToggleSelectedHandler()({
+                  target: { checked },
+                } as unknown as React.ChangeEvent<HTMLInputElement>)
+              }
+              className="accent-blue-500 align-middle"
+            />
+          </div>
         ),
         enableHiding: false,
-        size: 1,
+        size: 12,
       },
       // ...existing columns...
       ...columns,
@@ -118,7 +122,7 @@ export function DataTable<TData, TValue>({
     }
 
     return (
-      <div className="flex items-center justify-between px-3 py-2 bg-muted/40">
+      <div className="flex items-center justify-end gap-4 px-3 py-2 bg-muted/40">
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
@@ -159,11 +163,11 @@ export function DataTable<TData, TValue>({
           </Button>
         </div>
 
-        <div className="text-sm text-muted-foreground">
-          Page <strong>{pageIndex + 1}</strong> of <strong>{pageCount || 1}</strong>
-        </div>
+        <div className="flex items-center gap-4">
+          <div className="text-sm text-muted-foreground">
+            Page <strong>{pageIndex + 1}</strong> of <strong>{pageCount || 1}</strong>
+          </div>
 
-        <div>
           <Select
             value={String(table.getState().pagination.pageSize)}
             onValueChange={(value) => table.setPageSize(Number(value))}
