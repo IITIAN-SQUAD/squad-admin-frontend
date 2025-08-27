@@ -1,9 +1,11 @@
 "use client";
 
+import React, { useMemo, useState } from "react";
 import {
   ColumnDef,
   flexRender,
   getCoreRowModel,
+  getPaginationRowModel,
   useReactTable,
 } from "@tanstack/react-table";
 
@@ -16,6 +18,17 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
+import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
+
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
@@ -25,56 +38,205 @@ export function DataTable<TData, TValue>({
   columns,
   data,
 }: DataTableProps<TData, TValue>) {
+  // pagination & selection state
+  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
+  const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
+
+  // inject a default selection column at the start (use shadcn Checkbox)
+  const columnsWithSelection = useMemo<ColumnDef<TData, any>[]>(
+    () => [
+      {
+        id: "select",
+        header: ({ table }) => (
+          <Checkbox
+            aria-label="Select all"
+            checked={table.getIsAllRowsSelected()}
+            onCheckedChange={(checked) =>
+              // adapt to tanstack's native event handler
+              table.getToggleAllRowsSelectedHandler()({
+                target: { checked },
+              } as unknown as React.ChangeEvent<HTMLInputElement>)
+            }
+            className="align-middle"
+          />
+        ),
+        cell: ({ row }) => (
+          <Checkbox
+            aria-label={`Select row ${row.index + 1}`}
+            checked={row.getIsSelected()}
+            onCheckedChange={(checked) =>
+              row.getToggleSelectedHandler()({
+                target: { checked },
+              } as unknown as React.ChangeEvent<HTMLInputElement>)
+            }
+            className="align-middle"
+          />
+        ),
+        enableHiding: false,
+        size: 1,
+      },
+      // ...existing columns...
+      ...columns,
+    ],
+    [columns]
+  );
+
   const table = useReactTable({
     data,
-    columns,
+    columns: columnsWithSelection,
+    state: {
+      pagination,
+      rowSelection,
+    },
+    onPaginationChange: setPagination,
+    onRowSelectionChange: setRowSelection,
     getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
   });
+
+  // ADD: internal Pagination component (shadcn-style)
+  function Pagination({ table }: { table: any }) {
+    const pageCount = table.getPageCount();
+    const pageIndex = table.getState().pagination.pageIndex;
+
+    // build a compact page range similar to shadcn example
+    const pages: (number | "dots")[] = [];
+    const total = pageCount;
+    const current = pageIndex;
+
+    if (total <= 7) {
+      for (let i = 0; i < total; i++) pages.push(i);
+    } else {
+      // always show first, last, current +-1, and ellipses
+      pages.push(0);
+      if (current > 3) pages.push("dots");
+      const start = Math.max(1, current - 1);
+      const end = Math.min(total - 2, current + 1);
+      for (let i = start; i <= end; i++) pages.push(i);
+      if (current < total - 4) pages.push("dots");
+      pages.push(total - 1);
+    }
+
+    return (
+      <div className="flex items-center justify-between px-3 py-2 bg-muted/40">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => table.setPageIndex(Math.max(0, pageIndex - 1))}
+            disabled={!table.getCanPreviousPage()}
+            aria-label="Previous"
+          >
+            ‹
+          </Button>
+
+          {pages.map((p, idx) =>
+            p === "dots" ? (
+              <span key={`dots-${idx}`} className="px-2 text-sm text-muted-foreground">
+                …
+              </span>
+            ) : (
+              <Button
+                key={p}
+                variant={p === pageIndex ? "default" : "ghost"}
+                size="sm"
+                onClick={() => table.setPageIndex(p)}
+                aria-label={`Go to page ${p + 1}`}
+              >
+                {p + 1}
+              </Button>
+            )
+          )}
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => table.setPageIndex(Math.min(pageCount - 1, pageIndex + 1))}
+            disabled={!table.getCanNextPage()}
+            aria-label="Next"
+          >
+            ›
+          </Button>
+        </div>
+
+        <div className="text-sm text-muted-foreground">
+          Page <strong>{pageIndex + 1}</strong> of <strong>{pageCount || 1}</strong>
+        </div>
+
+        <div>
+          <Select
+            value={String(table.getState().pagination.pageSize)}
+            onValueChange={(value) => table.setPageSize(Number(value))}
+          >
+            <SelectTrigger size="sm" className="w-24">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {[5, 10, 20, 50].map((size) => (
+                <SelectItem key={size} value={String(size)}>
+                  {size}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="overflow-hidden rounded-md border">
-      <Table>
-        <TableHeader>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id}>
-              {headerGroup.headers.map((header) => {
-                return (
-                  <TableHead key={header.id}>
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                  </TableHead>
-                );
-              })}
-            </TableRow>
-          ))}
-        </TableHeader>
-        <TableBody>
-          {table.getRowModel().rows?.length ? (
-            table.getRowModel().rows.map((row) => (
-              <TableRow
-                key={row.id}
-                data-state={row.getIsSelected() && "selected"}
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                ))}
+      {/* use ScrollArea for shadcn scroll wrapper with max height */}
+      <ScrollArea className="max-h-72">
+        <Table>
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => {
+                  return (
+                    <TableHead key={header.id}>
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
+                    </TableHead>
+                  );
+                })}
               </TableRow>
-            ))
-          ) : (
-            <TableRow>
-              <TableCell colSpan={columns.length} className="h-24 text-center">
-                No results.
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows?.length ? (
+              table.getRowModel().rows.map((row) => (
+                <TableRow
+                  key={row.id}
+                  data-state={row.getIsSelected() && "selected"}
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell
+                  colSpan={columnsWithSelection.length}
+                  className="h-24 text-center"
+                >
+                  No results.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </ScrollArea>
+
+      {/* REPLACED: use the new Pagination component */}
+      <Pagination table={table} />
     </div>
   );
 }
