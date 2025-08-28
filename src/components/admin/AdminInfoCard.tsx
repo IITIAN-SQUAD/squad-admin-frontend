@@ -1,58 +1,10 @@
 import React from "react";
-
-// Card Wrapper
-function CardWrapper({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="bg-card rounded-xl shadow-lg p-6 mb-8 max-w-md border">
-      {children}
-    </div>
-  );
-}
-
-// Card Header
-function CardHeader({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="mb-4">
-      <h3 className="text-lg font-semibold tracking-tight text-primary">
-        {children}
-      </h3>
-    </div>
-  );
-}
-
-// Card Details Header
-function CardDetailsHeader({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="mb-2 text-sm font-medium text-muted-foreground">
-      {children}
-    </div>
-  );
-}
-
-// Card Details Row
-function CardDetailsRow({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="flex items-center py-2 border-b last:border-b-0">
-      {children}
-    </div>
-  );
-}
-
-// Card Details Key Item
-function CardDetailsKeyItem({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="w-32 text-xs font-semibold text-muted-foreground">
-      {children}
-    </span>
-  );
-}
-
-// Card Details Value Item
-function CardDetailsValueItem({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="text-sm font-medium ">{children}</span>
-  );
-}
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "@/components/ui/card";
 
 interface AdminInfo {
   image: string;
@@ -71,36 +23,59 @@ interface AdminInfoCardProps {
 
 export default function AdminInfoCard({ adminInfo }: AdminInfoCardProps) {
   return (
-    <CardWrapper>
-      <CardHeader>Admin Information</CardHeader>
+    <Card className="max-w-md border overflow-hidden">
+      <CardHeader>
+        <CardTitle className="text-lg font-semibold tracking-tight text-primary">
+          Admin Information
+        </CardTitle>
+      </CardHeader>
 
-      <CardDetailsHeader>Details</CardDetailsHeader>
-      <div className="space-y-1">
-        <CardDetailsRow>
-          <CardDetailsKeyItem>Created By:</CardDetailsKeyItem>
-          <CardDetailsValueItem>
-            {adminInfo.role === "Super Admin" ? "—" : adminInfo.createdBy}
-          </CardDetailsValueItem>
-        </CardDetailsRow>
-        <CardDetailsRow>
-          <CardDetailsKeyItem>Level:</CardDetailsKeyItem>
-          <CardDetailsValueItem>{adminInfo.level}</CardDetailsValueItem>
-        </CardDetailsRow>
-        <CardDetailsRow>
-          <CardDetailsKeyItem>Role:</CardDetailsKeyItem>
-          <CardDetailsValueItem>{adminInfo.role}</CardDetailsValueItem>
-        </CardDetailsRow>
-        <CardDetailsRow>
-          <CardDetailsKeyItem>Created On:</CardDetailsKeyItem>
-          <CardDetailsValueItem>{adminInfo.createdOn}</CardDetailsValueItem>
-        </CardDetailsRow>
-        <CardDetailsRow>
-          <CardDetailsKeyItem>Role Updated On:</CardDetailsKeyItem>
-          <CardDetailsValueItem>
-            {adminInfo.roleUpdatedOn}
-          </CardDetailsValueItem>
-        </CardDetailsRow>
-      </div>
-    </CardWrapper>
+      <CardContent className="">
+        <div className="mb-2 text-sm font-medium text-muted-foreground">
+          Details
+        </div>
+
+        <div className="space-y-1">
+          <div className="flex items-center py-2 border-b last:border-b-0">
+            <span className="w-32 text-xs font-semibold text-muted-foreground">
+              Created By:
+            </span>
+            <span className="text-sm font-medium ">
+              {adminInfo.role === "Super Admin" ? "—" : adminInfo.createdBy}
+            </span>
+          </div>
+
+          <div className="flex items-center py-2 border-b last:border-b-0">
+            <span className="w-32 text-xs font-semibold text-muted-foreground">
+              Level:
+            </span>
+            <span className="text-sm font-medium ">{adminInfo.level}</span>
+          </div>
+
+          <div className="flex items-center py-2 border-b last:border-b-0">
+            <span className="w-32 text-xs font-semibold text-muted-foreground">
+              Role:
+            </span>
+            <span className="text-sm font-medium ">{adminInfo.role}</span>
+          </div>
+
+          <div className="flex items-center py-2 border-b last:border-b-0">
+            <span className="w-32 text-xs font-semibold text-muted-foreground">
+              Created On:
+            </span>
+            <span className="text-sm font-medium ">{adminInfo.createdOn}</span>
+          </div>
+
+          <div className="flex items-center py-2 border-b last:border-b-0">
+            <span className="w-32 text-xs font-semibold text-muted-foreground">
+              Role Updated On:
+            </span>
+            <span className="text-sm font-medium ">
+              {adminInfo.roleUpdatedOn}
+            </span>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

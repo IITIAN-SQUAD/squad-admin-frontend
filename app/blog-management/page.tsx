@@ -8,6 +8,7 @@ import { Section } from "@/src/components/Section";
 import { SectionHeader } from "@/src/components/SectionHeader";
 import { DataTable_Search } from "@/src/components/ui/data-table-search";
 import { Plus, FileText } from "lucide-react";
+import Link from "next/link";
 import React from "react";
 
 // Dummy data for demonstration
@@ -93,18 +94,33 @@ export default function BlogManagementPage() {
       <div className="p-8">
         <div className="flex justify-between">
           <PageTitle>Blog Management</PageTitle>
-          <Button className="hover:cursor-pointer focus:ring-yellow-500 focus:ring-3 focus:ring-offset-2">
-            <span>
-              <Plus />
-            </span>
-            Create Blog
+          <Button
+            className="hover:cursor-pointer focus:ring-yellow-500 focus:ring-3 focus:ring-offset-2"
+            asChild
+          >
+            <Link href={"/blog-management/add"}>
+              <span>
+                <Plus />
+              </span>
+              Create Blog
+            </Link>
           </Button>
         </div>
         <Section>
           <SectionHeader>Analytics</SectionHeader>
           <div className="flex gap-6">
-            <AnalyticsCard title="Total Blogs" value={blogList.length} icon={<FileText />} />
-            <AnalyticsCard title="Published Blogs" value={blogList.filter(b => b.visibility === "Published").length} icon={<FileText />} />
+            <AnalyticsCard
+              title="Total Blogs"
+              value={blogList.length}
+              icon={<FileText />}
+            />
+            <AnalyticsCard
+              title="Published Blogs"
+              value={
+                blogList.filter((b) => b.visibility === "Published").length
+              }
+              icon={<FileText />}
+            />
           </div>
         </Section>
         <Section>
