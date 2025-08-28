@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import PageHeader from "@/src/components/page/page-header";
 import PageTitle from "@/src/components/page/page-title";
 import PageWrapper from "@/src/components/page/page-wrapper";
@@ -25,6 +25,15 @@ import {
   CardContent,
   CardFooter,
 } from "@/components/ui/card";
+import { useForm, Controller } from "react-hook-form";
+import {
+  Form,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage,
+} from "@/components/ui/form";
 
 export function Callout({
   type = "info",
@@ -69,12 +78,6 @@ function ActionButtons({
 }
 
 export default function BlogAddPage() {
-  // Blog Core States
-  const [blogTitle, setBlogTitle] = useState("");
-  const [subHeading, setSubHeading] = useState("");
-  const [bannerImage, setBannerImage] = useState<File | null>(null);
-  const [summary, setSummary] = useState("");
-
   // Blog Settings States
   const [visibility, setVisibility] = useState("draft");
   const [tags, setTags] = useState<string[]>([]);
@@ -99,8 +102,8 @@ export default function BlogAddPage() {
   ]);
   const [changeReason, setChangeReason] = useState("");
 
-  const [markdown, setMarkdown] = useState<string>(() => {
-    return `# Welcome
+  // initial markdown content
+  const initialMarkdown = `# Welcome
 
 Type markdown on the left and see preview on the right.
 
@@ -112,15 +115,32 @@ Type markdown on the left and see preview on the right.
 console.log("code block")
 \`\`\`
 `;
-  });
 
   const [CompiledMDX, setCompiledMDX] = useState<any>(null);
+
+  // add a form instance seeded from local state (use the initial markdown)
+  const form = useForm({
+    defaultValues: {
+      blogTitle: "",
+      subHeading: "",
+      summary: "",
+      markdown: initialMarkdown,
+      bannerImage: null,
+    },
+  });
+
+  // read values from form state
+  const blogTitle = form.watch("blogTitle");
+  const subHeading = form.watch("subHeading");
+  const summary = form.watch("summary");
+  const markdown = form.watch("markdown");
+  const bannerImage = form.watch("bannerImage") as File | null;
 
   // compile MDX when markdown changes
   useEffect(() => {
     async function compile() {
       try {
-        const code = await evaluate(markdown, {
+        const code = await evaluate(markdown || "", {
           ...runtime,
           remarkPlugins: [],
           rehypePlugins: [],
@@ -136,7 +156,6 @@ console.log("code block")
 
   // custom MDX components
   const mdxComponents = {
-
     Callout,
   };
 
@@ -163,7 +182,7 @@ console.log("code block")
     console.log("Navigating back...");
   };
 
-  // preview derived values
+  // preview derived values (use bannerImage from form)
   const previewBannerUrl = useMemo(() => {
     if (!bannerImage) return null;
     return URL.createObjectURL(bannerImage);
@@ -195,70 +214,123 @@ console.log("code block")
         <div className="max-w-full mx-auto flex gap-6">
           {/* Left: Forms (50%) */}
           <div className="w-1/2 space-y-6">
-            {/* Blog Core */}
+            {/* Blog Core (REFACTORED to use shadcn Form + react-hook-form) */}
             <Card>
               <CardHeader>
                 <CardTitle>Blog Content</CardTitle>
               </CardHeader>
+
               <CardContent>
-                <div className="mb-4">
-                  <Label className="mb-2">Blog Title</Label>
-                  <Input
-                    value={blogTitle}
-                    onChange={(e: any) => setBlogTitle(e.target.value)}
-                    placeholder="Enter blog title..."
-                  />
-                </div>
+                <Form {...form}>
+                  <form
+                    onSubmit={form.handleSubmit(() => {
+                      /* local submit intentionally no-op; saving handled by action buttons */
+                    })}
+                    className="space-y-4"
+                  >
+                    <FormField
+                      control={form.control}
+                      name="blogTitle"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Blog Title</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              // use form state; no local setState
+                              onChange={(e: any) => field.onChange(e)}
+                              placeholder="Enter blog title..."
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                <div className="mb-4">
-                  <Label className="mb-2">Sub Heading</Label>
-                  <Input
-                    value={subHeading}
-                    onChange={(e: any) => setSubHeading(e.target.value)}
-                    placeholder="Enter sub heading..."
-                  />
-                </div>
+                    <FormField
+                      control={form.control}
+                      name="subHeading"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Sub Heading</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              onChange={(e: any) => field.onChange(e)}
+                              placeholder="Enter sub heading..."
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                <div className="mb-4">
-                  <Label className="mb-2">Banner Image</Label>
-                  <Input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e: any) =>
-                      setBannerImage(e.target.files?.[0] || null)
-                    }
-                  />
-                  {bannerImage && (
-                    <p className="text-sm text-gray-600 mt-1">
-                      {bannerImage.name}
-                    </p>
-                  )}
-                </div>
+                    <FormItem>
+                      <FormLabel>Banner Image</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e: any) => {
+                            const file = e.target.files?.[0] || null;
+                            // store file in the form state
+                            form.setValue("bannerImage", file);
+                          }}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                      {bannerImage && (
+                        <p className="text-sm text-gray-600 mt-1">
+                          {bannerImage.name}
+                        </p>
+                      )}
+                    </FormItem>
 
-                <div className="mb-4">
-                  <Label className="mb-2">Blog Body (Markdown)</Label>
-                  <Textarea
-                    value={markdown}
-                    onChange={(e: any) => setMarkdown(e.target.value)}
-                    className="h-[40vh] font-mono"
-                    placeholder="Write markdown here..."
-                  />
-                </div>
+                    <FormField
+                      control={form.control}
+                      name="markdown"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Blog Body (Markdown)</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              {...field}
+                              onChange={(e: any) => field.onChange(e)}
+                              className="h-[40vh] font-mono"
+                              placeholder="Write markdown here..."
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                <div className="mb-4">
-                  <Label className="mb-2">Summary (Max 500 chars)</Label>
-                  <Textarea
-                    value={summary}
-                    onChange={(e: any) =>
-                      setSummary(e.target.value.slice(0, 500))
-                    }
-                    className="h-24"
-                    placeholder="Brief description of the blog..."
-                  />
-                  <p className="text-sm text-gray-500 mt-1">
-                    {summary.length}/500 characters
-                  </p>
-                </div>
+                    <FormField
+                      control={form.control}
+                      name="summary"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Summary (Max 500 chars)</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              {...field}
+                              onChange={(e: any) => {
+                                const val = e.target.value.slice(0, 500);
+                                field.onChange(val);
+                              }}
+                              className="h-24"
+                              placeholder="Brief description of the blog..."
+                            />
+                          </FormControl>
+                          <p className="text-sm text-gray-500 mt-1">
+                            {summary.length}/500 characters
+                          </p>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </form>
+                </Form>
               </CardContent>
             </Card>
 
