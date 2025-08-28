@@ -3,7 +3,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import PageHeader from "@/src/components/page/page-header";
 import PageTitle from "@/src/components/page/page-title";
 import PageWrapper from "@/src/components/page/page-wrapper";
-// replace plain inputs with shadcn inputs
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -35,7 +34,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 
-export function Callout({
+function Callout({
   type = "info",
   children,
 }: {
@@ -151,8 +150,6 @@ function LayoutToggle({
 export default function BlogAddPage() {
   // Blog Settings States
   const [visibility, setVisibility] = useState("draft");
-  const [tags, setTags] = useState<string[]>([]);
-  const [newTag, setNewTag] = useState("");
   const [createdBy, setCreatedBy] = useState("Admin User");
 
   // SEO States
@@ -206,6 +203,9 @@ console.log("code block")
       visibility: "draft",
       createdBy: "Admin User",
       changeReason: "",
+      // tags managed by form
+      tags: [] as string[],
+      newTag: "",
     },
   });
 
@@ -222,6 +222,9 @@ console.log("code block")
   const visibilityFromForm = form.watch("visibility");
   const createdByFromForm = form.watch("createdBy");
   const changeReasonFromForm = form.watch("changeReason");
+  // form-managed tags
+  const tagsFromForm = form.watch("tags") as string[] || [];
+  const newTagFromForm = form.watch("newTag") as string || "";
 
   // compile MDX when markdown changes
   useEffect(() => {
@@ -242,19 +245,23 @@ console.log("code block")
   }, [markdown]);
 
   // custom MDX components
-  const mdxComponents = {
+  const mdxComponents : any = {
     Callout,
   };
 
   const addTag = () => {
-    if (newTag.trim() && !tags.includes(newTag.trim())) {
-      setTags([...tags, newTag.trim()]);
-      setNewTag("");
+    const val = (newTagFromForm || "").trim();
+    if (!val) return;
+    const current = form.getValues("tags") || [];
+    if (!current.includes(val)) {
+      form.setValue("tags", [...current, val], { shouldValidate: true, shouldDirty: true });
+      form.setValue("newTag", "", { shouldDirty: true });
     }
   };
 
   const removeTag = (tagToRemove: string) => {
-    setTags(tags.filter((tag) => tag !== tagToRemove));
+    const current = form.getValues("tags") || [];
+    form.setValue("tags", current.filter((t: string) => t !== tagToRemove), { shouldDirty: true });
   };
 
   const handleSaveDraft = () => {
@@ -591,8 +598,8 @@ console.log("code block")
                     <div className="flex gap-2 mb-2">
                       <FormControl>
                         <Input
-                          value={newTag}
-                          onChange={(e: any) => setNewTag(e.target.value)}
+                          value={newTagFromForm}
+                          onChange={(e: any) => form.setValue("newTag", e.target.value)}
                           placeholder="Add tag..."
                         />
                       </FormControl>
@@ -601,7 +608,7 @@ console.log("code block")
                       </Button>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      {tags.map((tag, index) => (
+                      {tagsFromForm.map((tag, index) => (
                         <span
                           key={index}
                           className="bg-blue-100 text-blue-800 px-2 py-1 rounded-md text-sm flex items-center gap-1"
