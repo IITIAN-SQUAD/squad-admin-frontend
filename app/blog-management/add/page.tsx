@@ -77,6 +77,36 @@ function ActionButtons({
   );
 }
 
+// add LayoutToggle component
+function LayoutToggle({
+  layout,
+  onChange,
+}: {
+  layout: "horizontal" | "vertical";
+  onChange: (l: "horizontal" | "vertical") => void;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <Button
+        size="sm"
+        variant={layout === "horizontal" ? "default" : "ghost"}
+        onClick={() => onChange("horizontal")}
+        aria-label="Horizontal layout"
+      >
+        Horizontal
+      </Button>
+      <Button
+        size="sm"
+        variant={layout === "vertical" ? "default" : "ghost"}
+        onClick={() => onChange("vertical")}
+        aria-label="Vertical layout"
+      >
+        Vertical
+      </Button>
+    </div>
+  );
+}
+
 export default function BlogAddPage() {
   // Blog Settings States
   const [visibility, setVisibility] = useState("draft");
@@ -182,6 +212,9 @@ console.log("code block")
     console.log("Navigating back...");
   };
 
+  // layout state for toggling horizontal / vertical
+  const [layout, setLayout] = useState<"horizontal" | "vertical">("horizontal");
+
   // preview derived values (use bannerImage from form)
   const previewBannerUrl = useMemo(() => {
     if (!bannerImage) return null;
@@ -201,8 +234,14 @@ console.log("code block")
       <PageHeader title="Add Blog" />
 
       <PageWrapper>
-        <div className="flex justify-between items-center mb-4">
-          <PageTitle disableMargin>Add Blog</PageTitle>
+        {/* header row: PageTitle + layout toggle on left, actions on right */}
+        <div className="flex justify-between items-center pb-8">
+          <div className="flex items-center gap-4">
+            <PageTitle disableMargin>Add Blog</PageTitle>
+
+            {/* layout toggle placed beside title */}
+            <LayoutToggle layout={layout} onChange={setLayout} />
+          </div>
 
           <ActionButtons
             onCancel={handleCancel}
@@ -211,9 +250,20 @@ console.log("code block")
           />
         </div>
 
-        <div className="max-w-full mx-auto flex gap-6">
-          {/* Left: Forms (50%) */}
-          <div className="w-1/2 space-y-6">
+        {/* main container switches between row/column based on layout */}
+        <div
+          className={`max-w-full mx-auto flex gap-6 ${
+            layout === "vertical" ? "flex-col-reverse" : "flex-row"
+          }`}
+        >
+          {/* Left: Forms */}
+          <div
+            className={
+              layout === "vertical"
+                ? "grow space-y-6"
+                : "grow space-y-6"
+            }
+          >
             {/* Blog Core (REFACTORED to use shadcn Form + react-hook-form) */}
             <Card>
               <CardHeader>
@@ -474,8 +524,14 @@ console.log("code block")
             </Card>
           </div>
 
-          {/* Right: Preview (50%) */}
-          <div className="w-1/2 space-y-6 prose">
+          {/* Right: Preview */}
+          <div
+            className={
+              layout === "vertical"
+                ? "space-y-6 prose grow items-stretch max-w-[100vw]"
+                : "space-y-6 prose items-start h-fit grow"
+            }
+          >
             <Card className="h-full overflow-auto">
               <CardContent>
                 <div className="mb-4">
