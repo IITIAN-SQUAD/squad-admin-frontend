@@ -202,6 +202,10 @@ console.log("code block")
       metaDescription: "",
       canonicalUrl: "",
       metaImage: null,
+      // added blog settings defaults
+      visibility: "draft",
+      createdBy: "Admin User",
+      changeReason: "",
     },
   });
 
@@ -215,6 +219,9 @@ console.log("code block")
   const metaDescriptionFromForm = form.watch("metaDescription");
   const canonicalUrlFromForm = form.watch("canonicalUrl");
   const metaImageFromForm = form.watch("metaImage") as File | null;
+  const visibilityFromForm = form.watch("visibility");
+  const createdByFromForm = form.watch("createdBy");
+  const changeReasonFromForm = form.watch("changeReason");
 
   // compile MDX when markdown changes
   useEffect(() => {
@@ -548,79 +555,120 @@ console.log("code block")
               <CardHeader>
                 <CardTitle>Blog Settings</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="mb-4">
-                  <Label className="mb-2">Visibility Status</Label>
-                  <Select
-                    value={visibility}
-                    onValueChange={(val: any) => setVisibility(val)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="draft">Draft</SelectItem>
-                      <SelectItem value="published">Published</SelectItem>
-                      <SelectItem value="hidden">Hidden</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              <CardContent className="space-y-4">
+                <Form {...form}>
+                  <FormField
+                    control={form.control}
+                    name="visibility"
+                    render={({ field }) => (
+                      <FormItem className="w-full">
+                        <FormLabel>Visibility Status</FormLabel>
+                        <FormControl className="w-full">
+                          <Select
+                            value={field.value}
+                            onValueChange={(val: any) => {
+                              field.onChange(val);
+                              setVisibility(val);
+                            }}
+                          >
+                            <SelectTrigger className="w-full">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="draft">Draft</SelectItem>
+                              <SelectItem value="published">Published</SelectItem>
+                              <SelectItem value="hidden">Hidden</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
 
-                <div className="mb-4">
-                  <Label className="mb-2">Tags</Label>
-                  <div className="flex gap-2 mb-2">
-                    <Input
-                      value={newTag}
-                      onChange={(e: any) => setNewTag(e.target.value)}
-                      placeholder="Add tag..."
-                    />
-                    <Button onClick={addTag} size="sm">
-                      Add
-                    </Button>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {tags.map((tag, index) => (
-                      <span
-                        key={index}
-                        className="bg-blue-100 text-blue-800 px-2 py-1 rounded-md text-sm flex items-center gap-1"
-                      >
-                        {tag}
-                        <button
-                          onClick={() => removeTag(tag)}
-                          className="ml-1 text-red-500"
+                  {/* Tags remain local state but wrapped for consistent styling */}
+                  <FormItem>
+                    <FormLabel>Tags</FormLabel>
+                    <div className="flex gap-2 mb-2">
+                      <FormControl>
+                        <Input
+                          value={newTag}
+                          onChange={(e: any) => setNewTag(e.target.value)}
+                          placeholder="Add tag..."
+                        />
+                      </FormControl>
+                      <Button onClick={addTag} size="sm">
+                        Add
+                      </Button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {tags.map((tag, index) => (
+                        <span
+                          key={index}
+                          className="bg-blue-100 text-blue-800 px-2 py-1 rounded-md text-sm flex items-center gap-1"
                         >
-                          ×
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                </div>
+                          {tag}
+                          <button
+                            onClick={() => removeTag(tag)}
+                            className="ml-1 text-red-500"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  </FormItem>
 
-                <div className="mb-4">
-                  <Label className="mb-2">Created By</Label>
-                  <Input
-                    value={createdBy}
-                    onChange={(e: any) => setCreatedBy(e.target.value)}
+                  <FormField
+                    control={form.control}
+                    name="createdBy"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Created By</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            value={field.value || createdBy}
+                            onChange={(e: any) => {
+                              field.onChange(e);
+                              setCreatedBy(e.target.value);
+                            }}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
                   />
-                </div>
 
-                <div className="mb-4">
-                  <Label className="mb-2">Audit Info</Label>
-                  <div className="text-sm text-gray-600 space-y-1">
-                    <p>Created On: {new Date().toLocaleDateString()}</p>
-                    <p>Last Updated: {new Date().toLocaleDateString()}</p>
+                  <div className="mb-2">
+                    <FormLabel>Audit Info</FormLabel>
+                    <div className="text-sm text-gray-600 space-y-1">
+                      <p>Created On: {new Date().toLocaleDateString()}</p>
+                      <p>Last Updated: {new Date().toLocaleDateString()}</p>
+                    </div>
                   </div>
-                </div>
 
-                <div className="mt-4 pt-4 border-t">
-                  <Label className="mb-2">Change Reason</Label>
-                  <Textarea
-                    value={changeReason}
-                    onChange={(e: any) => setChangeReason(e.target.value)}
-                    className="h-16 text-sm"
-                    placeholder="Reason for status change..."
+                  <FormField
+                    control={form.control}
+                    name="changeReason"
+                    render={({ field }) => (
+                      <FormItem className="mt-4">
+                        <FormLabel>Change Reason</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            {...field}
+                            value={field.value || changeReason}
+                            onChange={(e: any) => {
+                              const v = e.target.value;
+                              field.onChange(v);
+                              setChangeReason(v);
+                            }}
+                            className="h-16 text-sm"
+                            placeholder="Reason for status change..."
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
                   />
-                </div>
+                </Form>
               </CardContent>
             </Card>
           </div>
