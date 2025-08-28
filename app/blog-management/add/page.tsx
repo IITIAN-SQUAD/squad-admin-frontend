@@ -87,22 +87,63 @@ function LayoutToggle({
 }) {
   return (
     <div className="flex items-center gap-2">
-      <Button
-        size="sm"
-        variant={layout === "horizontal" ? "default" : "ghost"}
+      <button
+        type="button"
         onClick={() => onChange("horizontal")}
         aria-label="Horizontal layout"
+        title="Horizontal layout"
+        className={`inline-flex items-center justify-center p-2 rounded-md ${
+          layout === "horizontal"
+            ? "bg-muted text-foreground"
+            : "hover:bg-muted/50"
+        }`}
       >
-        Horizontal
-      </Button>
-      <Button
-        size="sm"
-        variant={layout === "vertical" ? "default" : "ghost"}
+        {/* Horizontal icon: three horizontal bars */}
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="w-4 h-4"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <rect x="3" y="5" width="18" height="3" rx="1" />
+          <rect x="3" y="10.5" width="12" height="3" rx="1" />
+          <rect x="3" y="16" width="18" height="3" rx="1" />
+        </svg>
+      </button>
+
+      <button
+        type="button"
         onClick={() => onChange("vertical")}
         aria-label="Vertical layout"
+        title="Vertical layout"
+        className={`inline-flex items-center justify-center p-2 rounded-md ${
+          layout === "vertical"
+            ? "bg-muted text-foreground"
+            : "hover:bg-muted/50"
+        }`}
       >
-        Vertical
-      </Button>
+        {/* Vertical icon: three vertical bars */}
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="w-4 h-4"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <rect x="5" y="3" width="3" height="18" rx="1" />
+          <rect x="10.5" y="3" width="3" height="12" rx="1" />
+          <rect x="16" y="3" width="3" height="18" rx="1" />
+        </svg>
+      </button>
     </div>
   );
 }
