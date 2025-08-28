@@ -197,6 +197,11 @@ console.log("code block")
       summary: "",
       markdown: initialMarkdown,
       bannerImage: null,
+      // added SEO defaults
+      metaTitle: "",
+      metaDescription: "",
+      canonicalUrl: "",
+      metaImage: null,
     },
   });
 
@@ -206,6 +211,10 @@ console.log("code block")
   const summary = form.watch("summary");
   const markdown = form.watch("markdown");
   const bannerImage = form.watch("bannerImage") as File | null;
+  const metaTitleFromForm = form.watch("metaTitle");
+  const metaDescriptionFromForm = form.watch("metaDescription");
+  const canonicalUrlFromForm = form.watch("canonicalUrl");
+  const metaImageFromForm = form.watch("metaImage") as File | null;
 
   // compile MDX when markdown changes
   useEffect(() => {
@@ -300,9 +309,7 @@ console.log("code block")
           {/* Left: Forms */}
           <div
             className={
-              layout === "vertical"
-                ? "grow space-y-6"
-                : "grow space-y-6"
+              layout === "vertical" ? "grow space-y-6" : "grow space-y-6"
             }
           >
             {/* Blog Core (REFACTORED to use shadcn Form + react-hook-form) */}
@@ -430,56 +437,109 @@ console.log("code block")
               <CardHeader>
                 <CardTitle>SEO Settings</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="mb-2">Meta Title (60 chars)</Label>
-                    <Input
-                      value={metaTitle}
-                      onChange={(e: any) =>
-                        setMetaTitle(e.target.value.slice(0, 60))
-                      }
-                      placeholder="SEO title..."
-                    />
-                    <p className="text-sm text-gray-500">{metaTitle.length}/60</p>
-                  </div>
-
-                  <div>
-                    <Label className="mb-2">Canonical URL</Label>
-                    <Input
-                      type="url"
-                      value={canonicalUrl}
-                      onChange={(e: any) => setCanonicalUrl(e.target.value)}
-                      placeholder="https://..."
-                    />
-                  </div>
-                </div>
-
-                <div className="mt-4">
-                  <Label className="mb-2">Meta Description (160 chars)</Label>
-                  <Textarea
-                    value={metaDescription}
-                    onChange={(e: any) =>
-                      setMetaDescription(e.target.value.slice(0, 160))
-                    }
-                    className="h-20"
-                    placeholder="SEO description..."
+              <CardContent className="space-y-4">
+                <Form {...form}>
+                  <FormField
+                    control={form.control}
+                    name="metaTitle"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Meta Title (60 chars)</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            value={field.value}
+                            onChange={(e: any) => {
+                              const val = e.target.value.slice(0, 60);
+                              field.onChange(val);
+                              setMetaTitle(val);
+                            }}
+                            placeholder="SEO title..."
+                          />
+                        </FormControl>
+                        <p className="text-sm text-gray-500">
+                          {(metaTitle || metaTitleFromForm || "").length}/60
+                        </p>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                  <p className="text-sm text-gray-500">
-                    {metaDescription.length}/160
-                  </p>
-                </div>
 
-                <div className="mt-4">
-                  <Label className="mb-2">Meta Image</Label>
-                  <Input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e: any) =>
-                      setMetaImage(e.target.files?.[0] || null)
-                    }
+                  <FormField
+                    control={form.control}
+                    name="canonicalUrl"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Canonical URL</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            value={field.value}
+                            type="url"
+                            onChange={(e: any) => {
+                              field.onChange(e);
+                              setCanonicalUrl(e.target.value);
+                            }}
+                            placeholder="https://..."
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
+
+                  <FormField
+                    control={form.control}
+                    name="metaDescription"
+                    render={({ field }) => (
+                      <FormItem className="mt-4">
+                        <FormLabel>Meta Description (160 chars)</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            {...field}
+                            value={field.value}
+                            onChange={(e: any) => {
+                              const val = e.target.value.slice(0, 160);
+                              field.onChange(val);
+                              setMetaDescription(val);
+                            }}
+                            className="h-20"
+                            placeholder="SEO description..."
+                          />
+                        </FormControl>
+                        <p className="text-sm text-gray-500">
+                          {
+                            (metaDescription || metaDescriptionFromForm || "")
+                              .length
+                          }
+                          /160
+                        </p>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormItem>
+                    <FormLabel>Meta Image</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e: any) => {
+                          const file = e.target.files?.[0] || null;
+                          form.setValue("metaImage", file);
+                          setMetaImage(file);
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                    {metaImage && (
+                      <p className="text-sm text-gray-600 mt-1">
+                        {metaImage.name}
+                      </p>
+                    )}
+                  </FormItem>
+                </Form>
               </CardContent>
             </Card>
 
