@@ -148,15 +148,7 @@ function LayoutToggle({
 }
 
 export default function BlogAddPage() {
-  // Blog Settings States
-  const [visibility, setVisibility] = useState("draft");
-  const [createdBy, setCreatedBy] = useState("Admin User");
 
-  // SEO States
-  const [metaTitle, setMetaTitle] = useState("");
-  const [metaDescription, setMetaDescription] = useState("");
-  const [metaImage, setMetaImage] = useState<File | null>(null);
-  const [canonicalUrl, setCanonicalUrl] = useState("");
 
   // Audit States
   const [auditHistory] = useState([
@@ -466,13 +458,12 @@ console.log("code block")
                             onChange={(e: any) => {
                               const val = e.target.value.slice(0, 60);
                               field.onChange(val);
-                              setMetaTitle(val);
                             }}
                             placeholder="SEO title..."
                           />
                         </FormControl>
                         <p className="text-sm text-gray-500">
-                          {(metaTitle || metaTitleFromForm || "").length}/60
+                          {(metaTitleFromForm || "").length}/60
                         </p>
                         <FormMessage />
                       </FormItem>
@@ -492,7 +483,7 @@ console.log("code block")
                             type="url"
                             onChange={(e: any) => {
                               field.onChange(e);
-                              setCanonicalUrl(e.target.value);
+                              
                             }}
                             placeholder="https://..."
                           />
@@ -515,7 +506,7 @@ console.log("code block")
                             onChange={(e: any) => {
                               const val = e.target.value.slice(0, 160);
                               field.onChange(val);
-                              setMetaDescription(val);
+                             
                             }}
                             className="h-20"
                             placeholder="SEO description..."
@@ -523,7 +514,7 @@ console.log("code block")
                         </FormControl>
                         <p className="text-sm text-gray-500">
                           {
-                            (metaDescription || metaDescriptionFromForm || "")
+                            (metaDescriptionFromForm || "")
                               .length
                           }
                           /160
@@ -542,14 +533,14 @@ console.log("code block")
                         onChange={(e: any) => {
                           const file = e.target.files?.[0] || null;
                           form.setValue("metaImage", file);
-                          setMetaImage(file);
+                          
                         }}
                       />
                     </FormControl>
                     <FormMessage />
-                    {metaImage && (
+                    {metaImageFromForm && (
                       <p className="text-sm text-gray-600 mt-1">
-                        {metaImage.name}
+                        {metaImageFromForm.name}
                       </p>
                     )}
                   </FormItem>
@@ -575,7 +566,6 @@ console.log("code block")
                             value={field.value}
                             onValueChange={(val: any) => {
                               field.onChange(val);
-                              setVisibility(val);
                             }}
                           >
                             <SelectTrigger className="w-full">
@@ -634,10 +624,9 @@ console.log("code block")
                         <FormControl>
                           <Input
                             {...field}
-                            value={field.value || createdBy}
+                            value={field.value}
                             onChange={(e: any) => {
                               field.onChange(e);
-                              setCreatedBy(e.target.value);
                             }}
                           />
                         </FormControl>
@@ -726,10 +715,10 @@ console.log("code block")
                 <div className="mt-6 border-t pt-4">
                   <h3 className="text-sm font-semibold mb-2">SEO Preview</h3>
                   <p className="text-sm font-medium">
-                    {metaTitle || blogTitle || "Meta title preview"}
+                    {metaTitleFromForm || blogTitle || "Meta title preview"}
                   </p>
                   <p className="text-sm text-gray-600">
-                    {metaDescription || summary || "Meta description preview"}
+                    {metaDescriptionFromForm || summary || "Meta description preview"}
                   </p>
                 </div>
               </CardContent>
