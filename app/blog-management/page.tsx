@@ -8,6 +8,7 @@ import { Section } from "@/src/components/Section";
 import { SectionHeader } from "@/src/components/SectionHeader";
 import { DataTable_Search } from "@/src/components/ui/data-table-search";
 import { Plus, FileText } from "lucide-react";
+import Link from "next/link";
 import React from "react";
 
 // Dummy data for demonstration
@@ -30,6 +31,60 @@ const blogList = [
     createdBy: "Jane Smith",
     id: 2,
   },
+  {
+    srNo: 3,
+    heading: "Top programming languages for engineers",
+    bannerImage: "/blog3.jpg",
+    createdOn: "2024-05-20",
+    visibility: "Published",
+    createdBy: "Amit Kumar",
+    id: 3,
+  },
+  {
+    srNo: 4,
+    heading: "Time management tips for competitive exams",
+    bannerImage: "/blog4.jpg",
+    createdOn: "2024-04-15",
+    visibility: "Published",
+    createdBy: "Priya Patel",
+    id: 4,
+  },
+  {
+    srNo: 5,
+    heading: "Understanding Physics: Core concepts",
+    bannerImage: "/blog5.jpg",
+    createdOn: "2024-03-30",
+    visibility: "Draft",
+    createdBy: "Ravi Singh",
+    id: 5,
+  },
+  {
+    srNo: 6,
+    heading: "Chemistry tricks: Memorize the periodic table",
+    bannerImage: "/blog6.jpg",
+    createdOn: "2024-02-10",
+    visibility: "Published",
+    createdBy: "Neha Verma",
+    id: 6,
+  },
+  {
+    srNo: 7,
+    heading: "Interview preparation: Dos and Don'ts",
+    bannerImage: "/blog7.jpg",
+    createdOn: "2024-01-25",
+    visibility: "Published",
+    createdBy: "Suman Rao",
+    id: 7,
+  },
+  {
+    srNo: 8,
+    heading: "Study routines that actually work",
+    bannerImage: "/blog8.jpg",
+    createdOn: "2023-12-18",
+    visibility: "Draft",
+    createdBy: "Karan Mehta",
+    id: 8,
+  },
 ];
 
 export default function BlogManagementPage() {
@@ -39,18 +94,33 @@ export default function BlogManagementPage() {
       <div className="p-8">
         <div className="flex justify-between">
           <PageTitle>Blog Management</PageTitle>
-          <Button className="hover:cursor-pointer focus:ring-yellow-500 focus:ring-3 focus:ring-offset-2">
-            <span>
-              <Plus />
-            </span>
-            Create Blog
+          <Button
+            className="hover:cursor-pointer focus:ring-yellow-500 focus:ring-3 focus:ring-offset-2"
+            asChild
+          >
+            <Link href={"/blog-management/add"}>
+              <span>
+                <Plus />
+              </span>
+              Create Blog
+            </Link>
           </Button>
         </div>
         <Section>
           <SectionHeader>Analytics</SectionHeader>
           <div className="flex gap-6">
-            <AnalyticsCard title="Total Blogs" value={blogList.length} icon={<FileText />} />
-            <AnalyticsCard title="Published Blogs" value={blogList.filter(b => b.visibility === "Published").length} icon={<FileText />} />
+            <AnalyticsCard
+              title="Total Blogs"
+              value={blogList.length}
+              icon={<FileText />}
+            />
+            <AnalyticsCard
+              title="Published Blogs"
+              value={
+                blogList.filter((b) => b.visibility === "Published").length
+              }
+              icon={<FileText />}
+            />
           </div>
         </Section>
         <Section>
@@ -62,7 +132,6 @@ export default function BlogManagementPage() {
           />
         </Section>
       </div>
-      <div className="h-[100vh]" />
     </>
   );
 }

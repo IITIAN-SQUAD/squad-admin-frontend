@@ -7,6 +7,7 @@ import { DataTable_Search } from "@/src/components/ui/data-table-search";
 import AdminInfoCard from "@/src/components/admin/AdminInfoCard";
 import Image from "next/image";
 import React from "react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 // Dummy data for demonstration
 const adminInfo = {
@@ -91,13 +92,10 @@ export default async function AdminDetailPage({ params }: any) {
         <Section>
           <SectionHeader>Profile</SectionHeader>
           <div className="flex items-center gap-6 mb-4">
-            <Image
-              src={adminInfo.image}
-              alt={adminInfo.name}
-              width={64}
-              height={64}
-              className="rounded-full"
-            />
+            <Avatar className="h-10 w-10">
+              <AvatarImage src={adminInfo.image} />
+              <AvatarFallback>{adminInfo?.name?.substring(0, 2) || "AM"}</AvatarFallback>
+            </Avatar>
             <div>
               <div className="font-bold text-lg">{adminInfo.name}</div>
               <div className="text-sm text-muted-foreground">

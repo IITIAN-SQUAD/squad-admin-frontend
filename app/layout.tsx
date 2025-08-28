@@ -45,7 +45,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <div className="h-[100vh] flex">
+          <div className="min-h-[100vh] flex">
             <div className="sidebar-wrapper">
               <SidebarProvider>
                 <Sidebar className="w-64 ">
