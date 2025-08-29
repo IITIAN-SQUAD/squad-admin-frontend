@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import React, { useEffect, useState } from "react";
 import {
   Sidebar,
@@ -12,28 +12,32 @@ import {
   SidebarMenuButton,
   SidebarMenu,
   SidebarMenuItem,
+  SidebarTrigger,
 } from "@/components/ui/sidebar"; // shadcn sidebar import
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SIDEBAR_LINKS, SidebarLink } from "@/assets/constants/sidebar-links";
 import { usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
-function SidebarMenuRender(props: {
-  items: SidebarLink[];
-  fullUrl: string;
-}) {
-  const pathname = usePathname() || "/";
+function SidebarMenuRender(props: { items: SidebarLink[]; fullUrl: string }) {
 
   return (
     <>
       {props.items.map((item) => {
         const isActive = props.fullUrl && props.fullUrl.includes(item.url);
         return (
-          <SidebarMenuItem key={item.title} className={`rounded-sm ${isActive ? "bg-muted border" : "border border-transparent"}`}>
-            <SidebarMenuButton asChild>
-              <Link href={item.url} prefetch>
+          <SidebarMenuItem
+            key={item.title}
+            className={`rounded-lg ${
+              isActive ? "bg-zinc-900 text-zinc-100 border hover:bg-zinc-900 hover:text-zinc-100" : ""
+            }`}
+          >
+            <SidebarMenuButton asChild className={`${
+              isActive ? "bg-zinc-900 text-zinc-100 border hover:bg-zinc-900 hover:text-zinc-100" : ""
+            }`}>
+              <Link href={item.url} prefetch className="flex items-center gap-2">
                 <item.icon />
-                <span>{item.title}</span>
+                <p className="leading-0">{item.title}</p>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -51,9 +55,14 @@ export default function AppSidebar() {
 
   // read origin (provided by server via meta or data attribute), fallback to window.location.origin
   useEffect(() => {
-    const meta = document.querySelector('meta[name="origin"]') as HTMLMetaElement | null;
-    const docOrigin = meta?.content || (document.documentElement.dataset.origin ?? "");
-    const resolved = docOrigin || (typeof window !== "undefined" ? window.location.origin : "");
+    const meta = document.querySelector(
+      'meta[name="origin"]'
+    ) as HTMLMetaElement | null;
+    const docOrigin =
+      meta?.content || (document.documentElement.dataset.origin ?? "");
+    const resolved =
+      docOrigin ||
+      (typeof window !== "undefined" ? window.location.origin : "");
     setOrigin(resolved);
   }, []);
 
@@ -62,25 +71,32 @@ export default function AppSidebar() {
     const search = searchParams ? searchParams.toString() : "";
     const url = origin
       ? `${origin}${pathname}${search ? `?${search}` : ""}`
-      : (typeof window !== "undefined" ? window.location.href : `${pathname}${search ? `?${search}` : ""}`);
+      : typeof window !== "undefined"
+      ? window.location.href
+      : `${pathname}${search ? `?${search}` : ""}`;
     setFullUrl(url);
     console.log("fullUrl", url);
   }, [origin, pathname, searchParams]);
-  
+
   return (
     <div className="sidebar-wrapper">
-      <SidebarProvider>
-        <Sidebar className="w-64 ">
+      <SidebarProvider className="relative">
+        <Sidebar className="w-64" collapsible="offcanvas">
           <SidebarHeader className="p-[14px] bg-yellow-500 px-6">
             <span className="font-bold text-md">IITian Squad</span>
           </SidebarHeader>
+
+          <SidebarTrigger className="absolute -right-0 translate-y-[50vh] translate-x-1/2" />
 
           <SidebarContent className="p-2">
             <SidebarGroup>
               <SidebarGroupLabel>Admin management</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  <SidebarMenuRender items={SIDEBAR_LINKS.adminManagement} fullUrl={fullUrl} />
+                  <SidebarMenuRender
+                    items={SIDEBAR_LINKS.adminManagement}
+                    fullUrl={fullUrl}
+                  />
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
@@ -88,7 +104,10 @@ export default function AppSidebar() {
               <SidebarGroupLabel>Content management</SidebarGroupLabel>
               <SidebarGroupContent className="space-y-2">
                 <SidebarMenu>
-                  <SidebarMenuRender items={SIDEBAR_LINKS.contentManagement} fullUrl={fullUrl} />
+                  <SidebarMenuRender
+                    items={SIDEBAR_LINKS.contentManagement}
+                    fullUrl={fullUrl}
+                  />
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
