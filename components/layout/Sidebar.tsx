@@ -1,4 +1,5 @@
-import React from "react";
+"use client"
+import React, { useEffect, useState } from "react";
 import {
   Sidebar,
   SidebarContent,
@@ -13,10 +14,35 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"; // shadcn sidebar import
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { SIDEBAR_LINKS } from "@/assets/constants/sidebar-links";
-import { FileText } from "lucide-react";
+import { SIDEBAR_LINKS, SidebarLink } from "@/assets/constants/sidebar-links";
+import { usePathname } from "next/navigation";
+
+function SidebarMenuRender(props: {
+  items: SidebarLink[];
+}) {
+  const pathname = usePathname() || "/";
+
+  return (
+    <>
+      {props.items.map((item) => {
+        const isActive = pathname && pathname.includes(item.url);
+        return (
+          <SidebarMenuItem key={item.title} className={`rounded-sm ${isActive ? "bg-muted border" : ""}`}>
+            <SidebarMenuButton asChild>
+              <a href={item.url}>
+                <item.icon />
+                <span>{item.title}</span>
+              </a>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        );
+      })}
+    </>
+  );
+}
 
 export default function AppSidebar() {
+
   return (
     <div className="sidebar-wrapper">
       <SidebarProvider>
@@ -30,16 +56,7 @@ export default function AppSidebar() {
               <SidebarGroupLabel>Admin management</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {SIDEBAR_LINKS.adminManagement.map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton asChild>
-                        <a href={item.url}>
-                          <item.icon />
-                          <span>{item.title}</span>
-                        </a>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
+                  <SidebarMenuRender items={SIDEBAR_LINKS.adminManagement} />
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
@@ -47,26 +64,7 @@ export default function AppSidebar() {
               <SidebarGroupLabel>Content management</SidebarGroupLabel>
               <SidebarGroupContent className="space-y-2">
                 <SidebarMenu>
-                  {SIDEBAR_LINKS.contentManagement.map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton asChild>
-                        <a href={item.url}>
-                          <item.icon />
-                          <span>{item.title}</span>
-                        </a>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-                <SidebarMenu>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
-                      <a href="/blog-management">
-                        <FileText />
-                        <span>Blog Management</span>
-                      </a>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
+                  <SidebarMenuRender items={SIDEBAR_LINKS.contentManagement} />
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
