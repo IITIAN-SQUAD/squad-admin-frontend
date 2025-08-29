@@ -25,12 +25,12 @@ export default function PageTitle({
   return (
     <div className={`flex items-center gap-2 ${disableMargin ? "" : "mb-4"}`}>
       {backButton.enabled && <Button
-        variant="ghost"
+        
         size="icon"
         onClick={backButton.onClick ? backButton.onClick : () => router.back()}
-        className="mr-2"
+        className="mr-2 bg-zinc-100 hover:bg-zinc-200 focus:ring-2 focus:ring-zinc-300 cursor-pointer"
       >
-        <ArrowLeft className="w-5 h-5" />
+        <ArrowLeft className="w-5 h-5 text-zinc-800" />
       </Button>}
       <h1 className="text-xl font-bold">{children}</h1>
     </div>
