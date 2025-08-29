@@ -199,11 +199,11 @@ export function DataTable<TData, TValue>({
     <div className="max-h-[450px] overflow-auto">
       <Table className="relative" maxheight="rounded-md">
         {/* Sticky Header */}
-        <TableHeader className="sticky top-0 z-20 h-12 bg-black">
+        <TableHeader className="sticky top-0 z-20 h-12 bg-muted">
           {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id} className="hover:bg-black">
+            <TableRow key={headerGroup.id} className="hover:bg-muted">
               {headerGroup.headers.map((header) => (
-                <TableHead key={header.id} className="text-white first:rounded-l-md last:rounded-r-md">
+                <TableHead key={header.id} className="text-zinc-800 first:rounded-l-md last:rounded-r-md">
                   {header.isPlaceholder
                     ? null
                     : flexRender(

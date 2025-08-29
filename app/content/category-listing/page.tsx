@@ -58,6 +58,7 @@ export default function CategoryListingPage() {
           <SectionHeader>Analytics</SectionHeader>
           <div className="flex gap-6">
             <AnalyticsCard
+              className="max-w-2xl"
               title="Total Categories"
               value={42}
               icon={<User />}
