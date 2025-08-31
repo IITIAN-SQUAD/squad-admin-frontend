@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import React from "react";
+import React, { Suspense } from "react";
 import { ThemeProvider } from "@/components/ui/theme-provider";
 import AppSidebar from "@/components/layout/Sidebar"; // added
 
@@ -31,7 +31,9 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <div className="min-h-[100vh] flex">
-            <AppSidebar />
+            <Suspense fallback={<div className="w-64 border-r h-screen" />}>
+              <AppSidebar />
+            </Suspense>
             <main className=" grow-1 h-full shrink-0">{children}</main>
           </div>
         </ThemeProvider>

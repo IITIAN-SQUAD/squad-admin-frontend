@@ -3,13 +3,12 @@ import PageTitle from "@/src/components/page/page-title";
 import PageWrapper from "@/src/components/page/page-wrapper";
 import { Section } from "@/src/components/Section";
 import { SectionHeader } from "@/src/components/SectionHeader";
-import { ServerDataTable } from "@/src/components/ui/server-data-table";
 import { AnalyticsCard } from "@/src/components/AnalyticsCard";
 import { Mail, User, FileText } from "lucide-react";
 import Image from "next/image";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { AuthorBlogTable } from "@/src/components/table/author-blog-table";
+import { Separator } from "@/components/ui/separator";
 
 
 // Dummy data for the author
@@ -78,9 +77,9 @@ async function getAuthorBlogs(id: string) {
   return dummyBlogs;
 }
 
-export default async function AuthorDetailPage({ params }: { params: { id: string } }) {
+export default async function AuthorDetailPage(params: any) {
   // Server-side data fetching
-  const id = params.id;
+  const { id } = (await params).params;
   const author = await getAuthorData(id);
   const blogs = await getAuthorBlogs(id);
 
@@ -92,10 +91,10 @@ export default async function AuthorDetailPage({ params }: { params: { id: strin
         
         <Section>
           <SectionHeader>Author Details</SectionHeader>
-          <Card>
-            <CardContent className="p-6">
+          <Card className="max-w-3xl">
+            <CardContent>
               <div className="flex gap-6">
-                <div className="flex-shrink-0">
+                <div className="shrink-0">
                   <Image
                     src={author.avatar}
                     alt={author.name}
@@ -104,20 +103,22 @@ export default async function AuthorDetailPage({ params }: { params: { id: strin
                     className="rounded-full object-cover"
                   />
                 </div>
-                <div className="flex-grow space-y-4">
-                  <div>
+                <div className="grow space-y-[21px]">
+                  <div className="space-y-[9px]">
                     <h3 className="text-lg font-semibold">Description</h3>
-                    <p className="text-gray-600">{author.description}</p>
+                    <p className="text-gray-600 text-sm leading-[150%]">{author.description}</p>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
+                  <Separator />
+                  <div className="flex gap-2">
+                    <div className="grow">
                       <h4 className="text-sm font-medium text-gray-500">Email</h4>
                       <div className="flex items-center gap-2">
                         <Mail className="h-4 w-4 text-gray-400" />
                         <span>{author.email}</span>
                       </div>
                     </div>
-                    <div>
+                    <Separator orientation="vertical" />
+                    <div className="grow">
                       <h4 className="text-sm font-medium text-gray-500">Added By</h4>
                       <div className="flex items-center gap-2">
                         <User className="h-4 w-4 text-gray-400" />
@@ -134,7 +135,7 @@ export default async function AuthorDetailPage({ params }: { params: { id: strin
         <Section>
           <SectionHeader>Analytics</SectionHeader>
           <div className="flex gap-6">
-            <AnalyticsCard title="Associated Blogs" value={blogs.length} icon={<FileText />} />
+            <AnalyticsCard title="Associated Blogs" className="max-w-3xl" value={blogs.length} icon={<FileText />} />
           </div>
         </Section>
 
