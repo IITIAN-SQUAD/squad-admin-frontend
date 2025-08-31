@@ -111,8 +111,16 @@ const AuthorManagementActions = ({ row }: { row: any }) => {
   return (
     <>
       <div className="flex space-x-2">
-        <Button variant="ghost" size="icon" className="w-8 h-8" title="View Author">
-          <Eye className="w-4 h-4" />
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="w-8 h-8" 
+          title="View Author"
+          asChild
+        >
+          <Link href={`/author-management/${row.original.id}`}>
+            <Eye className="w-4 h-4" />
+          </Link>
         </Button>
         <Button 
           variant="ghost" 
@@ -186,6 +194,10 @@ export const AUTHOR_TABLE_COLUMNS = [
         {row.original.associatedBlogs}
       </Badge>
     ),
+  },
+  {
+    accessorKey: "addedBy",
+    header: "Added by Admin",
   },
   {
     id: "actions",
@@ -427,3 +439,39 @@ export const TABLE_COLUMNS = {
     },
   ],
 };
+
+export const AUTHOR_BLOGS_COLUMNS = [
+  {
+    accessorKey: "srNo",
+    header: "Sr No",
+  },
+  {
+    accessorKey: "heading",
+    header: "Blog Heading",
+    cell: ({ row }: any) => (
+      <div className="flex items-center gap-3">
+        <Image
+          src={row.original.bannerImage}
+          alt={row.original.heading}
+          width={60}
+          height={40}
+          className="rounded object-cover"
+        />
+        <span>{row.original.heading}</span>
+      </div>
+    ),
+  },
+  {
+    accessorKey: "categories",
+    header: "Blog Categories",
+    cell: ({ row }: any) => (
+      <div className="max-w-[200px] truncate">
+        {row.original.categories.join(", ")}
+      </div>
+    ),
+  },
+  {
+    accessorKey: "associatedBy",
+    header: "Associated by Admin",
+  },
+]

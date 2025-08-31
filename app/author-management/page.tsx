@@ -16,41 +16,46 @@ const authorList = [
   {
     srNo: 1,
     name: "John Doe",
-    avatar: "/avatars/john-doe.jpg",
+    avatar: "https://randomuser.me/api/portraits/men/1.jpg",
     email: "john.doe@example.com",
     associatedBlogs: 5,
+    addedBy: "Admin User",
     id: 1,
   },
   {
     srNo: 2,
     name: "Jane Smith",
-    avatar: "/avatars/jane-smith.jpg",
+    avatar: "https://randomuser.me/api/portraits/women/2.jpg",
     email: "jane.smith@example.com",
     associatedBlogs: 3,
+    addedBy: "Super Admin",
     id: 2,
   },
   {
     srNo: 3,
     name: "Amit Kumar",
-    avatar: "/avatars/amit-kumar.jpg",
+    avatar: "https://randomuser.me/api/portraits/men/3.jpg",
     email: "amit.kumar@example.com",
     associatedBlogs: 7,
+    addedBy: "Admin User",
     id: 3,
   },
   {
     srNo: 4,
     name: "Priya Patel",
-    avatar: "/avatars/priya-patel.jpg",
+    avatar: "https://randomuser.me/api/portraits/women/4.jpg",
     email: "priya.patel@example.com",
     associatedBlogs: 2,
+    addedBy: "Content Manager",
     id: 4,
   },
   {
     srNo: 5,
     name: "Ravi Singh",
-    avatar: "/avatars/ravi-singh.jpg",
+    avatar: "https://randomuser.me/api/portraits/men/5.jpg",
     email: "ravi.singh@example.com",
     associatedBlogs: 4,
+    addedBy: "Super Admin",
     id: 5,
   },
 ];
@@ -58,6 +63,19 @@ const authorList = [
 export default function AuthorManagementPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingAuthor, setEditingAuthor] = useState<any>(null);
+
+  // Add event listener for edit-author event
+  React.useEffect(() => {
+    const handleEditAuthorEvent = (event: CustomEvent) => {
+      handleEditAuthor(event.detail);
+    };
+
+    window.addEventListener('edit-author', handleEditAuthorEvent as EventListener);
+    
+    return () => {
+      window.removeEventListener('edit-author', handleEditAuthorEvent as EventListener);
+    };
+  }, []);
 
   const handleCreateAuthor = () => {
     setEditingAuthor(null);
