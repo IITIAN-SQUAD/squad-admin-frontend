@@ -9,7 +9,7 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Settings } from "lucide-react";
+import { Settings, Eye, Edit, Trash } from "lucide-react";
 import { useState } from "react";
 import ConfirmDialog from "@/src/components/dialogs/ConfirmDialog";
 import { Badge } from "@/components/ui/badge";
@@ -97,6 +97,102 @@ const BlogManagementActions = ({ row }: { row: any }) => {
     </>
   );
 };
+
+// Cell component for author management actions
+const AuthorManagementActions = ({ row }: { row: any }) => {
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+  const handleDelete = () => {
+    console.log("Deleting author:", row.original.id);
+    // Implement delete logic here
+    setIsDeleteDialogOpen(false);
+  };
+
+  return (
+    <>
+      <div className="flex space-x-2">
+        <Button variant="ghost" size="icon" className="w-8 h-8" title="View Author">
+          <Eye className="w-4 h-4" />
+        </Button>
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="w-8 h-8" 
+          title="Edit Author"
+          onClick={() => {
+            // This will be handled by the parent component
+            if (typeof window !== 'undefined' && window.dispatchEvent) {
+              window.dispatchEvent(new CustomEvent('edit-author', { detail: row.original }));
+            }
+          }}
+        >
+          <Edit className="w-4 h-4" />
+        </Button>
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="w-8 h-8" 
+          title="Delete Author"
+          onClick={() => setIsDeleteDialogOpen(true)}
+        >
+          <Trash className="w-4 h-4" />
+        </Button>
+      </div>
+
+      <ConfirmDialog
+        isOpen={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        title="Delete Author"
+        description="Are you sure you want to delete this author? This action cannot be undone."
+        confirmLabel="Delete"
+        onConfirm={handleDelete}
+        variant="destructive"
+      />
+    </>
+  );
+};
+
+export const AUTHOR_TABLE_COLUMNS = [
+  {
+    accessorKey: "srNo",
+    header: "Sr No",
+  },
+  {
+    accessorKey: "avatar",
+    header: "Avatar",
+    cell: ({ row }: any) => (
+      <Image
+        src={row.original.avatar}
+        alt={row.original.name}
+        width={40}
+        height={40}
+        className="rounded-full object-cover"
+      />
+    ),
+  },
+  {
+    accessorKey: "name",
+    header: "Author Name",
+  },
+  {
+    accessorKey: "email",
+    header: "Email",
+  },
+  {
+    accessorKey: "associatedBlogs",
+    header: "Associated Blogs",
+    cell: ({ row }: any) => (
+      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+        {row.original.associatedBlogs}
+      </Badge>
+    ),
+  },
+  {
+    id: "actions",
+    header: "Actions",
+    cell: AuthorManagementActions,
+  },
+];
 
 export const TABLE_COLUMNS = {
   adminListing: [
