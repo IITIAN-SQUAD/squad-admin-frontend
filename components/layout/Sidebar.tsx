@@ -18,9 +18,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SIDEBAR_LINKS, SidebarLink } from "@/assets/constants/sidebar-links";
 import { usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { CloudLightning, Club } from "lucide-react";
 
 function SidebarMenuRender(props: { items: SidebarLink[]; fullUrl: string }) {
-
   return (
     <>
       {props.items.map((item) => {
@@ -29,13 +29,23 @@ function SidebarMenuRender(props: { items: SidebarLink[]; fullUrl: string }) {
           <SidebarMenuItem
             key={item.title}
             className={`rounded-lg ${
-              isActive ? "bg-zinc-900 text-zinc-100 border hover:bg-zinc-900 hover:text-zinc-100" : ""
+              isActive ? "text-zinc-100 hover:text-zinc-100" : ""
             }`}
           >
-            <SidebarMenuButton asChild className={`${
-              isActive ? "bg-zinc-900 text-zinc-100 border hover:bg-zinc-900 hover:text-zinc-100" : ""
-            }`}>
-              <Link href={item.url} prefetch className="flex items-center gap-2">
+            <SidebarMenuButton
+              asChild
+              className={`${
+                isActive
+                  ? "bg-zinc-900 border text-zinc-100 hover:bg-zinc-900 hover:text-zinc-100"
+                  : ""
+              }`}
+              tooltip={item.title}
+            >
+              <Link
+                href={item.url}
+                prefetch
+                className="flex items-center gap-2"
+              >
                 <item.icon />
                 <p className="leading-0">{item.title}</p>
               </Link>
@@ -79,53 +89,59 @@ export default function AppSidebar() {
   }, [origin, pathname, searchParams]);
 
   return (
-    <div className="sidebar-wrapper">
-      <SidebarProvider className="relative">
-        <Sidebar className="w-64" collapsible="offcanvas">
-          <SidebarHeader className="p-[14px] bg-yellow-500 px-6">
-            <span className="font-bold text-md">IITian Squad</span>
-          </SidebarHeader>
-
-          <SidebarTrigger className="absolute -right-0 translate-y-[50vh] translate-x-1/2" />
-
-          <SidebarContent className="p-2">
-            <SidebarGroup>
-              <SidebarGroupLabel>Admin management</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  <SidebarMenuRender
-                    items={SIDEBAR_LINKS.adminManagement}
-                    fullUrl={fullUrl}
-                  />
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-            <SidebarGroup>
-              <SidebarGroupLabel>Content management</SidebarGroupLabel>
-              <SidebarGroupContent className="space-y-2">
-                <SidebarMenu>
-                  <SidebarMenuRender
-                    items={SIDEBAR_LINKS.contentManagement}
-                    fullUrl={fullUrl}
-                  />
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </SidebarContent>
-          <SidebarFooter>
-            <div className="flex items-start gap-4 px-4 py-4">
-              <Avatar>
-                <AvatarImage src="/profile.jpg" alt="Profile" />
-                <AvatarFallback>IS</AvatarFallback>
-              </Avatar>
-              <div>
-                <div className="font-medium">Your Name</div>
-                <div className="text-xs text-muted-foreground">Admin</div>
-              </div>
-            </div>
-          </SidebarFooter>
-        </Sidebar>
-      </SidebarProvider>
-    </div>
+    <Sidebar className="w-64 overflow-hidden" collapsible="icon">
+      <SidebarHeader className=" bg-yellow-500 h-[49px] flex justify-center">
+        <SidebarMenu>
+          <SidebarMenuItem className="p-2">
+            <SidebarMenuButton asChild className="m-0 ">
+              <Link href={"/"} prefetch className="flex items-center gap-2">
+                <CloudLightning className="size-4" />
+                <p className="leading-0 font-bold text-md">IITian Squad</p>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarHeader>
+      <SidebarContent className="p-2 overflow-x-hidden">
+        <SidebarGroup>
+          <SidebarGroupLabel>Admin management</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuRender
+                items={SIDEBAR_LINKS.adminManagement}
+                fullUrl={fullUrl}
+              />
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        <SidebarGroup>
+          <SidebarGroupLabel>Content management</SidebarGroupLabel>
+          <SidebarGroupContent className="space-y-2">
+            <SidebarMenu>
+              <SidebarMenuRender
+                items={SIDEBAR_LINKS.contentManagement}
+                fullUrl={fullUrl}
+              />
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+      <SidebarFooter className="overflow-hidden">
+        <SidebarMenu className="overflow-hidden">
+          <SidebarMenuItem className="p-2 overflow-hidden">
+            <SidebarMenuButton className="m-0 space-x-2 w-full h-auto">
+                <Avatar className="size-4">
+                  <AvatarImage src="/profile.jpg" alt="Profile" />
+                  <AvatarFallback>IS</AvatarFallback>
+                </Avatar>
+                <div className="w-full overflow-hidden">
+                  <p className="font-medium">Your Name</p>
+                  <p className="text-xs text-muted-foreground">Admin</p>
+                </div>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
+    </Sidebar>
   );
 }

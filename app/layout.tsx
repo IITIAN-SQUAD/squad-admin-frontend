@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Geist, Montserrat, Roboto } from "next/font/google";
 import "./globals.css";
 import React, { Suspense } from "react";
 import { ThemeProvider } from "@/components/ui/theme-provider";
 import AppSidebar from "@/components/layout/Sidebar"; // added
+import { SidebarProvider } from "@/components/ui/sidebar";
 
-const urbanist = Inter({
+const fontImport = Geist({
   variable: "--font-urbanist-sans",
   subsets: ["latin"],
 });
@@ -23,7 +24,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head />
-      <body className={urbanist.className}>
+      <body className={fontImport.className}>
         <ThemeProvider
           attribute="class"
           defaultTheme="light"
@@ -31,10 +32,12 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <div className="min-h-[100vh] flex">
-            <Suspense fallback={<div className="w-64 border-r h-screen" />}>
-              <AppSidebar />
-            </Suspense>
-            <main className=" grow-1 h-full shrink-0">{children}</main>
+            <SidebarProvider className="h-full">
+              <Suspense fallback={<div className="w-64 border-r h-screen" />}>
+                <AppSidebar />
+              </Suspense>
+              <main className="grow-1 h-full shrink-0">{children}</main>
+            </SidebarProvider>{" "}
           </div>
         </ThemeProvider>
       </body>
