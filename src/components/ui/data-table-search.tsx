@@ -12,7 +12,7 @@ interface DataTable_SearchProps<TData, TValue> {
   searchPlaceholder?: string;
 }
 
-function DataTableSearchInput({ searchPlaceholder }: { searchPlaceholder?: string }) {
+export function DataTableSearchInput({ searchPlaceholder }: { searchPlaceholder?: string }) {
   const { table } = useDataTableContext<any>();
   return (
     <Input
