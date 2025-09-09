@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useContext, createContext } from "react";
 import {
   ColumnDef,
   flexRender,
@@ -35,15 +35,35 @@ interface DataTableProps<TData, TValue> {
   data: TData[];
 }
 
-export function DataTable<TData, TValue>({
+interface DataTableContextType<TData> {
+  table: ReturnType<typeof useReactTable<TData>>;
+  pagination: { pageIndex: number; pageSize: number };
+  setPagination: React.Dispatch<
+    React.SetStateAction<{ pageIndex: number; pageSize: number }>
+  >;
+  rowSelection: Record<string, boolean>;
+  setRowSelection: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
+}
+
+const DataTableContext = createContext<DataTableContextType<any> | undefined>(
+  undefined
+);
+
+function useDataTableContext<TData>() {
+  const ctx = useContext(DataTableContext);
+  if (!ctx)
+    throw new Error("useDataTableContext must be used within a DataTableProvider");
+  return ctx as DataTableContextType<TData>;
+}
+
+function DataTableProvider<TData, TValue>({
   columns,
   data,
-}: DataTableProps<TData, TValue>) {
-  // pagination & selection state
+  children,
+}: React.PropsWithChildren<DataTableProps<TData, TValue>>) {
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
   const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
 
-  // inject a default selection column at the start (use shadcn Checkbox)
   const columnsWithSelection = useMemo<ColumnDef<TData, any>[]>(
     () => [
       {
@@ -80,7 +100,6 @@ export function DataTable<TData, TValue>({
         enableHiding: false,
         size: 12,
       },
-      // ...existing columns...
       ...columns,
     ],
     [columns]
@@ -99,102 +118,124 @@ export function DataTable<TData, TValue>({
     getPaginationRowModel: getPaginationRowModel(),
   });
 
-  // ADD: internal Pagination component (shadcn-style)
-  function Pagination({ table }: { table: any }) {
-    const pageCount = table.getPageCount();
-    const pageIndex = table.getState().pagination.pageIndex;
+  return (
+    <DataTableContext.Provider
+      value={{ table, pagination, setPagination, rowSelection, setRowSelection }}
+    >
+      {children}
+    </DataTableContext.Provider>
+  );
+}
 
-    // build a compact page range similar to shadcn example
-    const pages: (number | "dots")[] = [];
-    const total = pageCount;
-    const current = pageIndex;
+function Pagination() {
+  const { table } = useDataTableContext<any>();
+  const pageCount = table.getPageCount();
+  const pageIndex = table.getState().pagination.pageIndex;
 
-    if (total <= 7) {
-      for (let i = 0; i < total; i++) pages.push(i);
-    } else {
-      // always show first, last, current +-1, and ellipses
-      pages.push(0);
-      if (current > 3) pages.push("dots");
-      const start = Math.max(1, current - 1);
-      const end = Math.min(total - 2, current + 1);
-      for (let i = start; i <= end; i++) pages.push(i);
-      if (current < total - 4) pages.push("dots");
-      pages.push(total - 1);
-    }
+  // build a compact page range similar to shadcn example
+  const pages: (number | "dots")[] = [];
+  const total = pageCount;
+  const current = pageIndex;
 
-    return (
-      <div className="flex items-center justify-end gap-4 h-12 z-50 border-t-1 px-4">
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => table.setPageIndex(Math.max(0, pageIndex - 1))}
-            disabled={!table.getCanPreviousPage()}
-            aria-label="Previous"
-          >
-            ‹
-          </Button>
-
-          {pages.map((p, idx) =>
-            p === "dots" ? (
-              <span
-                key={`dots-${idx}`}
-                className="px-2 text-sm text-muted-foreground"
-              >
-                …
-              </span>
-            ) : (
-              <Button
-                key={p}
-                variant={p === pageIndex ? "default" : "ghost"}
-                size="sm"
-                onClick={() => table.setPageIndex(p)}
-                aria-label={`Go to page ${p + 1}`}
-              >
-                {p + 1}
-              </Button>
-            )
-          )}
-
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() =>
-              table.setPageIndex(Math.min(pageCount - 1, pageIndex + 1))
-            }
-            disabled={!table.getCanNextPage()}
-            aria-label="Next"
-          >
-            ›
-          </Button>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <div className="text-sm text-muted-foreground">
-            Page <strong>{pageIndex + 1}</strong> of{" "}
-            <strong>{pageCount || 1}</strong>
-          </div>
-
-          <Select
-            value={String(table.getState().pagination.pageSize)}
-            onValueChange={(value) => table.setPageSize(Number(value))}
-          >
-            <SelectTrigger size="sm" className="w-24">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {[5, 10, 20, 50].map((size) => (
-                <SelectItem key={size} value={String(size)}>
-                  {size}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-    );
+  if (total <= 7) {
+    for (let i = 0; i < total; i++) pages.push(i);
+  } else {
+    // always show first, last, current +-1, and ellipses
+    pages.push(0);
+    if (current > 3) pages.push("dots");
+    const start = Math.max(1, current - 1);
+    const end = Math.min(total - 2, current + 1);
+    for (let i = start; i <= end; i++) pages.push(i);
+    if (current < total - 4) pages.push("dots");
+    pages.push(total - 1);
   }
 
+  return (
+    <div className="flex items-center justify-end gap-4 h-12 z-50 border-t-1 px-4">
+      <div className="flex items-center gap-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => table.setPageIndex(Math.max(0, pageIndex - 1))}
+          disabled={!table.getCanPreviousPage()}
+          aria-label="Previous"
+        >
+          ‹
+        </Button>
+
+        {pages.map((p, idx) =>
+          p === "dots" ? (
+            <span
+              key={`dots-${idx}`}
+              className="px-2 text-sm text-muted-foreground"
+            >
+              …
+            </span>
+          ) : (
+            <Button
+              key={p}
+              variant={p === pageIndex ? "default" : "ghost"}
+              size="sm"
+              onClick={() => table.setPageIndex(p)}
+              aria-label={`Go to page ${p + 1}`}
+            >
+              {p + 1}
+            </Button>
+          )
+        )}
+
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() =>
+            table.setPageIndex(Math.min(pageCount - 1, pageIndex + 1))
+          }
+          disabled={!table.getCanNextPage()}
+          aria-label="Next"
+        >
+          ›
+        </Button>
+      </div>
+
+      <div className="flex items-center gap-4">
+        <div className="text-sm text-muted-foreground">
+          Page <strong>{pageIndex + 1}</strong> of{" "}
+          <strong>{pageCount || 1}</strong>
+        </div>
+
+        <Select
+          value={String(table.getState().pagination.pageSize)}
+          onValueChange={(value) => table.setPageSize(Number(value))}
+        >
+          <SelectTrigger size="sm" className="w-24">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {[5, 10, 20, 50].map((size) => (
+              <SelectItem key={size} value={String(size)}>
+                {size}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+    </div>
+  );
+}
+
+export function DataTable<TData, TValue>({
+  columns,
+  data,
+}: DataTableProps<TData, TValue>) {
+  return (
+    <DataTableProvider columns={columns} data={data}>
+      <InnerDataTable />
+    </DataTableProvider>
+  );
+}
+
+function InnerDataTable<TData, TValue>() {
+  const { table } = useDataTableContext<TData>();
   return (
     <Table className="relative" maxheight="max-h-[450px] rounded-md overflow-auto">
       {/* Sticky Header */}
@@ -237,7 +278,7 @@ export function DataTable<TData, TValue>({
         ) : (
           <TableRow>
             <TableCell
-              colSpan={columnsWithSelection.length}
+              colSpan={table.getAllColumns().length}
               className="h-24 text-center"
             >
               No results.
@@ -247,8 +288,8 @@ export function DataTable<TData, TValue>({
       </TableBody>
       <TableFooter className="sticky bottom-0 z-20 bg-background border-0">
         <TableRow className="p-0 border-0">
-          <TableCell colSpan={columnsWithSelection.length} className="p-0">
-            <Pagination table={table} />
+          <TableCell colSpan={table.getAllColumns().length} className="p-0">
+            <Pagination />
           </TableCell>
         </TableRow>
       </TableFooter>
