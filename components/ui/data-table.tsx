@@ -6,6 +6,7 @@ import {
   flexRender,
   getCoreRowModel,
   getPaginationRowModel,
+  getFilteredRowModel,
   useReactTable,
 } from "@tanstack/react-table";
 
@@ -43,26 +44,29 @@ interface DataTableContextType<TData> {
   >;
   rowSelection: Record<string, boolean>;
   setRowSelection: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
+  globalFilter: string;
+  setGlobalFilter: React.Dispatch<React.SetStateAction<string>>;
 }
 
 const DataTableContext = createContext<DataTableContextType<any> | undefined>(
   undefined
 );
 
-function useDataTableContext<TData>() {
+export function useDataTableContext<TData>() {
   const ctx = useContext(DataTableContext);
   if (!ctx)
     throw new Error("useDataTableContext must be used within a DataTableProvider");
   return ctx as DataTableContextType<TData>;
 }
 
-function DataTableProvider<TData, TValue>({
+export function DataTableProvider<TData, TValue>({
   columns,
   data,
   children,
 }: React.PropsWithChildren<DataTableProps<TData, TValue>>) {
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
   const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
+  const [globalFilter, setGlobalFilter] = useState("");
 
   const columnsWithSelection = useMemo<ColumnDef<TData, any>[]>(
     () => [
@@ -111,16 +115,20 @@ function DataTableProvider<TData, TValue>({
     state: {
       pagination,
       rowSelection,
+      globalFilter,
     },
     onPaginationChange: setPagination,
     onRowSelectionChange: setRowSelection,
+    onGlobalFilterChange: setGlobalFilter,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
+    getFilteredRowModel: (getFilteredRowModel as any)(),
+    globalFilterFn: "includesString",
   });
 
   return (
     <DataTableContext.Provider
-      value={{ table, pagination, setPagination, rowSelection, setRowSelection }}
+      value={{ table, pagination, setPagination, rowSelection, setRowSelection, globalFilter, setGlobalFilter }}
     >
       {children}
     </DataTableContext.Provider>
@@ -234,7 +242,7 @@ export function DataTable<TData, TValue>({
   );
 }
 
-function InnerDataTable<TData, TValue>() {
+export function InnerDataTable<TData, TValue>() {
   const { table } = useDataTableContext<TData>();
   return (
     <Table className="relative" maxheight="max-h-[450px] rounded-md overflow-auto">
@@ -262,8 +270,8 @@ function InnerDataTable<TData, TValue>() {
 
       {/* Scrollable Rows */}
       <TableBody>
-        {table.getRowModel().rows?.length ? (
-          table.getRowModel().rows.map((row) => (
+        {table.getFilteredRowModel().rows?.length ? (
+          table.getFilteredRowModel().rows.map((row) => (
             <TableRow
               key={row.id}
               data-state={row.getIsSelected() && "selected"}

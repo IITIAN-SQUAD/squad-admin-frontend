@@ -1,9 +1,9 @@
 "use client"
 
 import React from "react";
-import { useReactTable, getCoreRowModel, getFilteredRowModel, flexRender, ColumnDef } from "@tanstack/react-table";
+import { ColumnDef } from "@tanstack/react-table";
 import { Input } from "@/components/ui/input";
-import { DataTable } from "@/components/ui/data-table";
+import { DataTable, DataTableProvider, InnerDataTable, useDataTableContext } from "@/components/ui/data-table";
 
 
 interface DataTable_SearchProps<TData, TValue> {
@@ -12,35 +12,28 @@ interface DataTable_SearchProps<TData, TValue> {
   searchPlaceholder?: string;
 }
 
-export function DataTable_Search<TData, TValue>({ columns, data, searchPlaceholder = "Search..." }: DataTable_SearchProps<TData, TValue>) {
-  const [globalFilter, setGlobalFilter] = React.useState("");
-
-  const table = useReactTable({
-    data,
-    columns,
-    state: { globalFilter },
-    onGlobalFilterChange: setGlobalFilter,
-    getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    globalFilterFn: "includesString",
-  });
-
+function DataTableSearchInput({ searchPlaceholder }: { searchPlaceholder?: string }) {
+  const { table } = useDataTableContext<any>();
   return (
-    <div>
+    <Input
+      placeholder={searchPlaceholder || "Search..."}
+      value={table.getState().globalFilter || ""}
+      onChange={e => table.setGlobalFilter(e.target.value)}
+      className="w-[300px]"
+    />
+  );
+}
+
+export function DataTable_Search<TData, TValue>({ columns, data, searchPlaceholder = "Search..." }: DataTable_SearchProps<TData, TValue>) {
+  // Just render the search input and DataTable, which now provides context
+  return (
+    <DataTableProvider columns={columns} data={data}>
       <div className="mb-4 flex justify-between items-center">
-        <Input
-          placeholder={searchPlaceholder}
-          value={globalFilter}
-          onChange={e => setGlobalFilter(e.target.value)}
-          className="w-[300px]"
-        />
+        <DataTableSearchInput searchPlaceholder={searchPlaceholder} />
       </div>
       <div className="rounded-md">
-        <DataTable
-          columns={columns}
-          data={data}
-        />
+        <InnerDataTable />
       </div>
-    </div>
+    </DataTableProvider>
   );
 }
