@@ -3,7 +3,7 @@
 import React from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import { Input } from "@/components/ui/input";
-import { DataTable, DataTableProvider, InnerDataTable, useDataTableContext } from "@/components/ui/data-table";
+import { DataTableProvider, InnerDataTable, useDataTableContext } from "@/components/ui/data-table";
 
 
 interface DataTable_SearchProps<TData, TValue> {
