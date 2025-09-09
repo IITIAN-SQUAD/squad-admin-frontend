@@ -33,9 +33,7 @@ export default function RootLayout({
         >
           <div className="min-h-[100vh] flex">
             <SidebarProvider className="h-full">
-              <Suspense fallback={<div className="w-64 border-r h-screen" />}>
-                <AppSidebar />
-              </Suspense>
+              <AppSidebar />
               <main className="grow-1 h-full shrink-0">{children}</main>
             </SidebarProvider>{" "}
           </div>

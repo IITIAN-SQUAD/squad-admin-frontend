@@ -1,24 +1,22 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React from "react";
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
   SidebarHeader,
-  SidebarProvider,
   SidebarGroupLabel,
   SidebarGroupContent,
   SidebarMenuButton,
   SidebarMenu,
   SidebarMenuItem,
-  SidebarTrigger,
-} from "@/components/ui/sidebar"; // shadcn sidebar import
+} from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SIDEBAR_LINKS, SidebarLink } from "@/assets/constants/sidebar-links";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { CloudLightning, Club } from "lucide-react";
+import { CloudLightning } from "lucide-react";
 
 function SidebarMenuRender(props: { items: SidebarLink[]; fullUrl: string }) {
   return (
@@ -59,34 +57,6 @@ function SidebarMenuRender(props: { items: SidebarLink[]; fullUrl: string }) {
 
 export default function AppSidebar() {
   const pathname = usePathname() || "/";
-  const searchParams = useSearchParams();
-  const [origin, setOrigin] = useState<string>("");
-  const [fullUrl, setFullUrl] = useState<string>("");
-
-  // read origin (provided by server via meta or data attribute), fallback to window.location.origin
-  useEffect(() => {
-    const meta = document.querySelector(
-      'meta[name="origin"]'
-    ) as HTMLMetaElement | null;
-    const docOrigin =
-      meta?.content || (document.documentElement.dataset.origin ?? "");
-    const resolved =
-      docOrigin ||
-      (typeof window !== "undefined" ? window.location.origin : "");
-    setOrigin(resolved);
-  }, []);
-
-  // compute full URL whenever origin, pathname or search params change
-  useEffect(() => {
-    const search = searchParams ? searchParams.toString() : "";
-    const url = origin
-      ? `${origin}${pathname}${search ? `?${search}` : ""}`
-      : typeof window !== "undefined"
-      ? window.location.href
-      : `${pathname}${search ? `?${search}` : ""}`;
-    setFullUrl(url);
-    console.log("fullUrl", url);
-  }, [origin, pathname, searchParams]);
 
   return (
     <Sidebar className="w-64 overflow-hidden" collapsible="icon">
@@ -109,7 +79,7 @@ export default function AppSidebar() {
             <SidebarMenu>
               <SidebarMenuRender
                 items={SIDEBAR_LINKS.adminManagement}
-                fullUrl={fullUrl}
+                fullUrl={pathname}
               />
             </SidebarMenu>
           </SidebarGroupContent>
@@ -120,7 +90,7 @@ export default function AppSidebar() {
             <SidebarMenu>
               <SidebarMenuRender
                 items={SIDEBAR_LINKS.contentManagement}
-                fullUrl={fullUrl}
+                fullUrl={pathname}
               />
             </SidebarMenu>
           </SidebarGroupContent>
