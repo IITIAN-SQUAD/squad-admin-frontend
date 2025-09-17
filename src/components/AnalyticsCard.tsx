@@ -1,7 +1,11 @@
 import React from "react";
 import { HelpCircle } from "lucide-react";
 
-import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
 
 interface AnalyticsCardProps {
   title: string;
@@ -11,6 +15,7 @@ interface AnalyticsCardProps {
   size?: "sm" | "md";
   children?: React.ReactNode;
   explanation?: string; // new optional prop
+  iconPlacement?: "default" | "top"; // new prop
 }
 
 export const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
@@ -21,6 +26,7 @@ export const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
   size = "md",
   children,
   explanation,
+  iconPlacement = "default",
 }) => {
   // size-specific classes
   const sizeClasses =
@@ -38,14 +44,37 @@ export const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
           value: "text-3xl font-bold",
         };
 
+  // title-inline icon sizing when iconPlacement === "top"
+  const titleIconSizeClass = size === "sm" ? "w-3 h-3" : "w-4 h-4";
+
   return (
     <div
       className={`bg-card rounded-lg shadow ${sizeClasses.container} flex-1 border flex items-center gap-4 ${className} h-fit`}
     >
-      {icon && <div className={`${sizeClasses.icon} text-muted-foreground`}>{icon}</div>}
+      {/* default placement: icon in left column */}
+      {iconPlacement === "default" && icon && (
+        <div className={`${sizeClasses.icon} text-muted-foreground`}>
+          {icon}
+        </div>
+      )}
+
       <div>
-        <div className={`${sizeClasses.title} text-muted-foreground flex items-center gap-2`}>
+        <div
+          className={`${sizeClasses.title} text-muted-foreground flex items-center gap-2`}
+        >
+          {/* top placement: icon inline left of title, sized to title using flex layout */}
+          {iconPlacement === "top" && icon && (
+            <>
+              <span
+                className={`${titleIconSizeClass} inline-flex items-center text-muted-foreground`}
+              >
+                {icon}
+              </span>
+            </>
+          )}
+
           <span>{title}</span>
+
           {explanation && (
             <Tooltip>
               <TooltipTrigger asChild>
