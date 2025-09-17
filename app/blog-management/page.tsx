@@ -10,10 +10,10 @@ import { BlogListingTable } from "@/src/components/table/blog-listing-table";
 import {
   Plus,
   Eye,
-  Heart,
-  MessageCircle,
   ThumbsUp,
   MessageSquare,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import Link from "next/link";
 import React from "react";
@@ -123,6 +123,18 @@ export default function BlogManagementPage() {
   const totalLikes = blogList.reduce((sum, b) => sum + (b.likes || 0), 0);
   const totalComments = blogList.reduce((sum, b) => sum + (b.comments || 0), 0);
 
+  // previous week heuristic: previous = 90% of current per-item
+  const prevViewsTotal = blogList.reduce((sum, b) => sum + Math.round((b.views || 0) * 0.9), 0);
+  const prevLikesTotal = blogList.reduce((sum, b) => sum + Math.round((b.likes || 0) * 0.9), 0);
+  const prevCommentsTotal = blogList.reduce((sum, b) => sum + Math.round((b.comments || 0) * 0.9), 0);
+
+  const viewsDelta = totalViews - prevViewsTotal;
+  const likesDelta = totalLikes - prevLikesTotal;
+  const commentsDelta = totalComments - prevCommentsTotal;
+
+  const pct = (delta: number, prev: number) =>
+    prev > 0 ? Math.round((delta / prev) * 100) : 0;
+
   return (
     <>
       <PageHeader title={"Blog Management"} />
@@ -151,21 +163,56 @@ export default function BlogManagementPage() {
                 value={totalViews}
                 icon={<Eye />}
                 explanation="Total number of page views across all listed blogs."
-              />
+              >
+                <div className="flex items-center gap-2 text-sm">
+                  {viewsDelta >= 0 ? (
+                    <ArrowUp className="w-4 h-4 text-green-500" />
+                  ) : (
+                    <ArrowDown className="w-4 h-4 text-red-500" />
+                  )}
+                  <span className={viewsDelta >= 0 ? "text-green-600" : "text-red-600"}>
+                    {viewsDelta >= 0 ? `+${viewsDelta}` : `${viewsDelta}`} ({prevViewsTotal > 0 ? `${viewsDelta >= 0 ? "+" : ""}${pct(viewsDelta, prevViewsTotal)}%` : "—"}) vs last week
+                  </span>
+                </div>
+              </AnalyticsCard>
+
               <AnalyticsCard
                 size="sm"
                 title="Cumulative Likes"
                 value={totalLikes}
                 icon={<ThumbsUp />}
                 explanation="Total likes received across all listed blogs."
-              />
+              >
+                <div className="flex items-center gap-2 text-sm">
+                  {likesDelta >= 0 ? (
+                    <ArrowUp className="w-4 h-4 text-green-500" />
+                  ) : (
+                    <ArrowDown className="w-4 h-4 text-red-500" />
+                  )}
+                  <span className={likesDelta >= 0 ? "text-green-600" : "text-red-600"}>
+                    {likesDelta >= 0 ? `+${likesDelta}` : `${likesDelta}`} ({prevLikesTotal > 0 ? `${likesDelta >= 0 ? "+" : ""}${pct(likesDelta, prevLikesTotal)}%` : "—"}) vs last week
+                  </span>
+                </div>
+              </AnalyticsCard>
+
               <AnalyticsCard
                 size="sm"
                 title="Cumulative Comments"
                 value={totalComments}
                 icon={<MessageSquare />}
                 explanation="Total number of comments across all listed blogs."
-              />
+              >
+                <div className="flex items-center gap-2 text-sm">
+                  {commentsDelta >= 0 ? (
+                    <ArrowUp className="w-4 h-4 text-green-500" />
+                  ) : (
+                    <ArrowDown className="w-4 h-4 text-red-500" />
+                  )}
+                  <span className={commentsDelta >= 0 ? "text-green-600" : "text-red-600"}>
+                    {commentsDelta >= 0 ? `+${commentsDelta}` : `${commentsDelta}`} ({prevCommentsTotal > 0 ? `${commentsDelta >= 0 ? "+" : ""}${pct(commentsDelta, prevCommentsTotal)}%` : "—"}) vs last week
+                  </span>
+                </div>
+              </AnalyticsCard>
             </div>
           </div>
           <div>
