@@ -141,16 +141,19 @@ export default function BlogManagementPage() {
 					<SectionHeader>Analytics</SectionHeader>
 					<div className="flex gap-6">
 						<AnalyticsCard
+            size="sm"
 							title="Cumulative Views"
 							value={totalViews}
 							icon={<Eye />}
 						/>
 						<AnalyticsCard
+            size="sm"
 							title="Cumulative Likes"
 							value={totalLikes}
 							icon={<ThumbsUp />}
 						/>
 						<AnalyticsCard
+            size="sm"
 							title="Cumulative Comments"
 							value={totalComments}
 							icon={<MessageSquare />}
