@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Geist, Montserrat, Roboto } from "next/font/google";
+import { Inter, Geist, Plus_Jakarta_Sans, DM_Sans } from "next/font/google";
 import "./globals.css";
 import React, { Suspense } from "react";
 import { ThemeProvider } from "@/components/ui/theme-provider";
