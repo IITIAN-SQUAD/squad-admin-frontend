@@ -1,4 +1,7 @@
 import React from "react";
+import { HelpCircle } from "lucide-react";
+
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 interface AnalyticsCardProps {
   title: string;
@@ -7,6 +10,7 @@ interface AnalyticsCardProps {
   className?: string;
   size?: "sm" | "md";
   children?: React.ReactNode;
+  explanation?: string; // new optional prop
 }
 
 export const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
@@ -16,6 +20,7 @@ export const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
   className = "",
   size = "md",
   children,
+  explanation,
 }) => {
   // size-specific classes
   const sizeClasses =
@@ -39,7 +44,25 @@ export const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
     >
       {icon && <div className={`${sizeClasses.icon} text-muted-foreground`}>{icon}</div>}
       <div>
-        <div className={`${sizeClasses.title} text-muted-foreground`}>{title}</div>
+        <div className={`${sizeClasses.title} text-muted-foreground flex items-center gap-2`}>
+          <span>{title}</span>
+          {explanation && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  aria-label={`${title} explanation`}
+                  className="p-0.5 rounded-full hover:bg-muted/60 inline-flex items-center justify-center"
+                >
+                  <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top" align="center" className="max-w-xs">
+                <div className="text-sm text-white">{explanation}</div>
+              </TooltipContent>
+            </Tooltip>
+          )}
+        </div>
         <div className={sizeClasses.value}>{value}</div>
         {children && <div className="mt-2">{children}</div>}
       </div>
