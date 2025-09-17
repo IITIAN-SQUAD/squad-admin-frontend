@@ -6,6 +6,7 @@ import PageHeader from "@/src/components/page/page-header";
 import PageTitle from "@/src/components/page/page-title";
 import { Section } from "@/src/components/Section";
 import { SectionHeader } from "@/src/components/SectionHeader";
+import { BlogListingTable } from "@/src/components/table/blog-listing-table";
 import { DataTable_Search } from "@/src/components/ui/data-table-search";
 import { Plus, FileText } from "lucide-react";
 import Link from "next/link";
@@ -125,8 +126,7 @@ export default function BlogManagementPage() {
         </Section>
         <Section>
           <SectionHeader>Blog Listing</SectionHeader>
-          <DataTable_Search
-            columns={TABLE_COLUMNS.blogManagementListing}
+          <BlogListingTable
             data={blogList}
             searchPlaceholder="Search blogs..."
           />
