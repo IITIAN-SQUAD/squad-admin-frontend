@@ -14,8 +14,9 @@ interface AnalyticsCardProps {
   className?: string;
   size?: "sm" | "md";
   children?: React.ReactNode;
-  explanation?: string; // new optional prop
-  iconPlacement?: "default" | "top"; // new prop
+  explanation?: string;
+  iconPlacement?: "default" | "top";
+  childrenPlacement?: "below" | "right"; // new prop
 }
 
 export const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
@@ -27,6 +28,7 @@ export const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
   children,
   explanation,
   iconPlacement = "default",
+  childrenPlacement = "below",
 }) => {
   // size-specific classes
   const sizeClasses =
@@ -58,43 +60,93 @@ export const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
         </div>
       )}
 
-      <div>
-        <div
-          className={`${sizeClasses.title} text-muted-foreground flex items-center gap-2`}
-        >
-          {/* top placement: icon inline left of title, sized to title using flex layout */}
-          {iconPlacement === "top" && icon && (
-            <>
-              <span
-                className={`${titleIconSizeClass} inline-flex items-center text-muted-foreground`}
-              >
-                {icon}
-              </span>
-            </>
-          )}
+      {/* content area: either stacked (default) or two-column with children on the right */}
+      {childrenPlacement === "right" ? (
+        <div className="flex-1 flex items-center justify-between gap-4">
+          <div>
+            <div
+              className={`${sizeClasses.title} text-muted-foreground flex items-center gap-2`}
+            >
+              {iconPlacement === "top" && icon && (
+                <>
+                  <span
+                    className={`${titleIconSizeClass} inline-flex items-center text-muted-foreground`}
+                  >
+                    {icon}
+                  </span>
+                </>
+              )}
 
-          <span>{title}</span>
+              <span>{title}</span>
 
-          {explanation && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  aria-label={`${title} explanation`}
-                  className="p-0.5 rounded-full hover:bg-muted/60 inline-flex items-center justify-center"
-                >
-                  <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="top" align="center" className="max-w-xs">
-                <div className="text-sm text-white">{explanation}</div>
-              </TooltipContent>
-            </Tooltip>
+              {explanation && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      aria-label={`${title} explanation`}
+                      className="p-0.5 rounded-full hover:bg-muted/60 inline-flex items-center justify-center"
+                    >
+                      <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent
+                    side="top"
+                    align="center"
+                    className="max-w-xs"
+                  >
+                    <div className="text-sm text-white">{explanation}</div>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+            </div>
+
+            <div className={sizeClasses.value}>{value}</div>
+          </div>
+
+          {/* right side: keep children compact and non-wrapping */}
+          {children && (
+            <div className="shrink-0 flex items-center">{children}</div>
           )}
         </div>
-        <div className={sizeClasses.value}>{value}</div>
-        {children && <div className="mt-2">{children}</div>}
-      </div>
+      ) : (
+        <div>
+          <div
+            className={`${sizeClasses.title} text-muted-foreground flex items-center gap-2`}
+          >
+            {iconPlacement === "top" && icon && (
+              <>
+                <span
+                  className={`${titleIconSizeClass} inline-flex items-center text-muted-foreground`}
+                >
+                  {icon}
+                </span>
+              </>
+            )}
+
+            <span>{title}</span>
+
+            {explanation && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label={`${title} explanation`}
+                    className="p-0.5 rounded-full hover:bg-muted/60 inline-flex items-center justify-center"
+                  >
+                    <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" align="center" className="max-w-xs">
+                  <div className="text-sm text-white">{explanation}</div>
+                </TooltipContent>
+              </Tooltip>
+            )}
+          </div>
+          <div className={sizeClasses.value}>{value}</div>
+          {children && <div className="mt-2">{children}</div>}
+        </div>
+      )}
     </div>
   );
 };

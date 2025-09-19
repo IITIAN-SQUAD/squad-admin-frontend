@@ -141,14 +141,14 @@ export default function BlogManagementPage() {
   const likesDelta = totalLikes - prevLikesTotal;
   const commentsDelta = totalComments - prevCommentsTotal;
 
-  // helper to render enhanced comparison UI
+  // refined comparison UI used as right-aligned children
   const Comparison = ({ delta, prev }: { delta: number; prev: number }) => {
     const positive = delta >= 0;
     const pct = prev > 0 ? Math.round((delta / prev) * 100) : 0;
     return (
       <div className="flex items-center gap-3">
-        <span
-          className={`inline-flex items-center gap-2 px-2 py-1 rounded-full text-xs font-medium ${
+        <div
+          className={`flex items-center gap-2 px-2 py-1 rounded-full text-xs font-medium ${
             positive ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
           }`}
           aria-hidden
@@ -158,26 +158,18 @@ export default function BlogManagementPage() {
           ) : (
             <ArrowDown className="w-3 h-3" />
           )}
-          <span>{positive ? "Up" : "Down"}</span>
-        </span>
-
-        <div className="flex flex-col">
-          <span
-            className={`text-sm font-semibold ${
-              positive ? "text-green-600" : "text-red-600"
-            }`}
-          >
-            {positive ? `+${delta}` : `${delta}`}
-          </span>
-          <span className="text-xs text-muted-foreground">
-            {prev > 0
-              ? `${positive ? "+" : ""}${pct}% vs last week`
-              : "No previous data"}
-          </span>
+          <span className="font-semibold">{positive ? `+${delta}` : `${delta}`}</span>
         </div>
 
-        <div className="hidden sm:block ml-2 text-xs text-muted-foreground">
-          Prev: <span className="font-medium text-foreground ml-1">{prev}</span>
+        <div className="flex flex-col items-end">
+          <span
+            className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+              positive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+            }`}
+          >
+            {prev > 0 ? `${positive ? "+" : ""}${pct}%` : "—"}
+          </span>
+          <span className="text-xs text-muted-foreground mt-1">Prev: {prev}</span>
         </div>
       </div>
     );
@@ -204,9 +196,10 @@ export default function BlogManagementPage() {
         <Section className="space-y-4">
           <div>
             <SectionHeader>Analytics</SectionHeader>
-            <div className="flex gap-6">
+            <div className="flex gap-6 items-start">
               <AnalyticsCard
                 iconPlacement="top"
+                childrenPlacement="right"
                 size="sm"
                 title="Cumulative Views"
                 value={totalViews}
@@ -218,6 +211,7 @@ export default function BlogManagementPage() {
 
               <AnalyticsCard
                 iconPlacement="top"
+                childrenPlacement="right"
                 size="sm"
                 title="Cumulative Likes"
                 value={totalLikes}
@@ -229,6 +223,7 @@ export default function BlogManagementPage() {
 
               <AnalyticsCard
                 iconPlacement="top"
+                childrenPlacement="right"
                 size="sm"
                 title="Cumulative Comments"
                 value={totalComments}
