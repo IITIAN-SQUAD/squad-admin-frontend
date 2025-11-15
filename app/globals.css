@@ -47,6 +47,9 @@
 
 :root {
   --radius: 0.625rem;
+  --sidebar-width: 16rem;
+  --sidebar-width-icon: 4rem;
+  --sidebar-width-mobile: 18rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.141 0.005 285.823);
   --card: oklch(1 0 0);
@@ -123,4 +126,161 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Force light theme styles */
+html {
+  color-scheme: light !important;
+}
+
+html.light,
+html:not(.dark) {
+  --background: oklch(1 0 0) !important;
+  --foreground: oklch(0.141 0.005 285.823) !important;
+  --card: oklch(1 0 0) !important;
+  --card-foreground: oklch(0.141 0.005 285.823) !important;
+}
+
+/* Ensure buttons are visible */
+.bg-primary {
+  background-color: oklch(0.21 0.006 285.885) !important;
+  color: oklch(0.985 0 0) !important;
+}
+
+.bg-secondary {
+  background-color: oklch(0.967 0.001 286.375) !important;
+  color: oklch(0.21 0.006 285.885) !important;
+}
+
+/* KaTeX equation styles */
+.equation-block {
+  display: block;
+  text-align: center;
+  margin: 0.2em 0;
+  padding: 0;
+  background-color: transparent;
+  overflow-x: auto;
+  max-width: 100%;
+  line-height: 1.2;
+}
+
+/* Tighter spacing for consecutive equations */
+.equation-block + .equation-block {
+  margin-top: 0.15em;
+}
+
+.equation-inline {
+  display: inline;
+  margin: 0 2px;
+}
+
+/* KaTeX styling overrides */
+.katex {
+  font-size: 1.1em !important;
+}
+
+.katex-display {
+  margin: 0.1em 0 !important;
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+/* Prevent horizontal overflow */
+.rich-content {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.rich-content * {
+  max-width: 100%;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.rich-content pre,
+.rich-content code {
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+/* Image styles for rich content */
+.content-image,
+.rich-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin: 1em 0;
+  display: block;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.content-image.float-left {
+  float: left;
+  max-width: 50%;
+}
+
+.content-image.float-right {
+  float: right;
+  max-width: 50%;
+}
+
+.content-image.mx-auto {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.prose img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin: 1.5em auto;
+  display: block;
+}
+
+/* Clear floats */
+.rich-content::after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+/* Prevent horizontal scrolling in editor panels */
+.prose {
+  max-width: 100% !important;
+  overflow-x: hidden;
+}
+
+.prose * {
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+
+/* Ensure all input elements wrap properly */
+input[type="text"],
+input[type="number"],
+textarea {
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+/* Prevent code blocks from causing horizontal scroll */
+code {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: pre-wrap;
+  max-width: 100%;
+}
+
+/* Image upload manager specific styles */
+.image-upload-manager * {
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
 }
