@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,7 +44,7 @@ const focusedQuestionTypes: { value: QuestionType; label: string; description: s
   { value: "integer_based", label: "Integer Based", description: "Whole number answer" },
 ];
 
-export default function QuestionEditorPage() {
+function QuestionEditorPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -471,5 +471,13 @@ export default function QuestionEditorPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function QuestionEditorPage() {
+  return (
+    <Suspense fallback={<div className="p-8">Loading...</div>}>
+      <QuestionEditorPageContent />
+    </Suspense>
   );
 }

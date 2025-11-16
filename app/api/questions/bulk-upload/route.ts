@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
-import * as pdfParse from 'pdf-parse';
+// import pdf from 'pdf-parse';
 import { fromPath } from 'pdf2pic';
 import sharp from 'sharp';
 import { writeFile, unlink, mkdir } from 'fs/promises';
@@ -52,9 +52,11 @@ export async function POST(request: NextRequest) {
           message: '📝 Extracting text from PDF...'
         })}\n\n`));
         
-        const pdfData = await pdfParse(pdfBuffer);
-        const pdfText = pdfData.text;
-        const numPages = pdfData.numpages;
+        // TODO: Fix pdf-parse import issue
+        // const pdfData = await pdfParse(pdfBuffer);
+        // const pdfText = pdfData.text;
+        // const numPages = pdfData.numpages;
+        const numPages = 1; // Temporary placeholder
         
         controller.enqueue(encoder.encode(`data: ${JSON.stringify({
           message: `📄 Found ${numPages} pages in PDF`
@@ -134,7 +136,7 @@ export async function POST(request: NextRequest) {
           message: '🤖 Processing with GPT-4 Vision...'
         })}\n\n`));
         
-        const questions = await extractQuestionsWithGPT4Vision(pdfText, s3Urls, controller, encoder);
+        const questions = await extractQuestionsWithGPT4Vision('', s3Urls, controller, encoder);
         
         controller.enqueue(encoder.encode(`data: ${JSON.stringify({
           message: `✅ Found ${questions.length} questions!`

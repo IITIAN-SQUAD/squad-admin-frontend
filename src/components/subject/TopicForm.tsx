@@ -41,7 +41,7 @@ export default function TopicForm({
     setValue,
     watch,
     formState: { errors, isSubmitting },
-  } = useForm<TopicFormData>({
+  } = useForm({
     resolver: zodResolver(topicSchema),
     defaultValues: {
       name: initialData?.name || "",

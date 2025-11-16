@@ -41,7 +41,7 @@ export default function ExamForm({ initialData, onSubmit }: ExamFormProps) {
     formState: { errors, isSubmitting },
     setValue,
     watch,
-  } = useForm<ExamFormData>({
+  } = useForm({
     resolver: zodResolver(examSchema),
     defaultValues: {
       name: initialData?.name || "",

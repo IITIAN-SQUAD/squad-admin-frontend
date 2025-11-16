@@ -152,6 +152,8 @@ interface SubjectNodeProps {
   onDelete: (subjectId: string) => void;
   onAddChapter: (parentId: string) => void;
   onAddTopic: (subjectId: string) => void;
+  onEditTopic: (topic: Topic) => void;
+  onDeleteTopic: (topicId: string) => void;
   expandedSubjects: Set<string>;
   toggleExpanded: (subjectId: string) => void;
 }
@@ -163,6 +165,8 @@ function SubjectNode({
   onDelete,
   onAddChapter,
   onAddTopic,
+  onEditTopic,
+  onDeleteTopic,
   expandedSubjects,
   toggleExpanded,
 }: SubjectNodeProps) {
@@ -261,7 +265,7 @@ function SubjectNode({
                   <Button 
                     variant="outline" 
                     size="sm"
-                    onClick={() => setEditingTopic(topic.topic)}
+                    onClick={() => onEditTopic(topic.topic)}
                   >
                     <Edit className="w-4 h-4" />
                   </Button>
@@ -269,11 +273,7 @@ function SubjectNode({
                     variant="outline" 
                     size="sm" 
                     className="text-red-600"
-                    onClick={() => {
-                      if (confirm("Are you sure you want to delete this topic?")) {
-                        setTopics(topics.filter(t => t.id !== topic.topic.id));
-                      }
-                    }}
+                    onClick={() => onDeleteTopic(topic.topic.id)}
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
@@ -292,6 +292,8 @@ function SubjectNode({
               onDelete={onDelete}
               onAddChapter={onAddChapter}
               onAddTopic={onAddTopic}
+              onEditTopic={onEditTopic}
+              onDeleteTopic={onDeleteTopic}
               expandedSubjects={expandedSubjects}
               toggleExpanded={toggleExpanded}
             />
@@ -435,6 +437,12 @@ export default function SubjectManagementPage() {
                 onAddTopic={(subjectId) => {
                   setSelectedSubjectForTopic(subjectId);
                   setIsTopicDialogOpen(true);
+                }}
+                onEditTopic={setEditingTopic}
+                onDeleteTopic={(topicId) => {
+                  if (confirm("Are you sure you want to delete this topic?")) {
+                    setTopics(topics.filter(t => t.id !== topicId));
+                  }
                 }}
                 expandedSubjects={expandedSubjects}
                 toggleExpanded={toggleExpanded}

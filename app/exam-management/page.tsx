@@ -154,7 +154,7 @@ export default function ExamManagementPage() {
                   <TableCell>{exam.countries.join(", ")}</TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
-                      {exam.metadata.slice(0, 2).map((meta, index) => (
+                      {exam.metadata?.slice(0, 2).map((meta, index) => (
                         <span
                           key={index}
                           className="inline-block bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded"
@@ -162,7 +162,7 @@ export default function ExamManagementPage() {
                           {meta.key}: {meta.value}
                         </span>
                       ))}
-                      {exam.metadata.length > 2 && (
+                      {exam.metadata && exam.metadata.length > 2 && (
                         <span className="text-xs text-gray-500">
                           +{exam.metadata.length - 2} more
                         </span>

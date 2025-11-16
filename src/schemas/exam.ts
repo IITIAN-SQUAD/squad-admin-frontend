@@ -28,6 +28,7 @@ export const topicSchema = z.object({
   description: z.string().min(1, "Description is required").max(300, "Description too long"),
   subjectId: z.string().min(1, "Subject ID is required"),
   parentTopicId: z.string().optional(),
+  hierarchyPath: z.array(z.string()).default([]),
   order: z.number().min(0, "Order must be positive"),
   difficulty: z.enum(['easy', 'medium', 'hard']),
   tags: z.array(z.string()).default([]),

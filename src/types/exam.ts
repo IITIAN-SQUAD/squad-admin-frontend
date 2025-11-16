@@ -49,6 +49,7 @@ export interface Topic {
   description: string;
   subjectId: string;
   parentTopicId?: string; // For nested topics
+  hierarchyPath: string[]; // Array of IDs from root to this node [subjectId, parentSubjectId?, parentTopicId?, topicId]
   order: number;
   difficulty: 'easy' | 'medium' | 'hard';
   tags: string[];
@@ -137,7 +138,7 @@ export interface Question {
   // Type-specific data
   integerAnswer?: number;
   blanksData?: { text: string; blanks: string[] };
-  matchingPairs?: { left: RichContent; right: RichContent }[];
+  matchingPairs?: { left: string; right: string }[];
   
   // Media assets
   assets: MediaAsset[];

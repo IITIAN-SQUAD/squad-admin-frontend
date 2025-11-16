@@ -44,7 +44,7 @@ export default function QuestionEditor({
     setValue,
     watch,
     formState: { errors, isSubmitting },
-  } = useForm<QuestionFormData>({
+  } = useForm({
     resolver: zodResolver(questionSchema),
     defaultValues: {
       description: initialData?.description || "",
@@ -99,7 +99,7 @@ export default function QuestionEditor({
   };
 
   const updateCorrectAnswers = (optionIndex: number, isCorrect: boolean) => {
-    const option = watchedOptions[optionIndex];
+    const option = watchedOptions?.[optionIndex];
     if (!option) return;
 
     const currentCorrect = watch("correctAnswers") || [];
@@ -127,7 +127,7 @@ export default function QuestionEditor({
         <div class="options-content">
           <h4 class="text-md font-medium mb-3">Options:</h4>
           <div class="space-y-2">
-            ${watchedOptions.map((option, index) => `
+            ${(watchedOptions || []).map((option, index) => `
               <div class="flex items-center p-3 border rounded-lg ${option.isCorrect ? 'bg-green-50 border-green-200' : 'bg-gray-50'}">
                 <span class="font-medium mr-3">${option.label})</span>
                 <span>${option.value || 'Option not set'}</span>
@@ -153,12 +153,13 @@ export default function QuestionEditor({
     generatePreview();
   }, [watchedDescription, watchedHtmlContent, watchedOptions, difficulty]);
 
-  const onFormSubmit = (data: QuestionFormData) => {
+  const onFormSubmit = (data: any) => {
     onSubmit({
+      type: 'single_choice_mcq',
       description: data.description,
       htmlContent: data.htmlContent || data.description,
-      options: data.options,
-      correctAnswers: data.correctAnswers,
+      options: data.options || [],
+      correctAnswers: data.correctAnswers || [],
       positiveMarks: data.positiveMarks,
       negativeMarks: data.negativeMarks,
       duration: data.duration,
@@ -166,6 +167,12 @@ export default function QuestionEditor({
       tags: tags,
       topicId: data.topicId,
       sectionId: data.sectionId,
+      content: {
+        question: { raw: data.description, html: data.htmlContent || data.description, plainText: data.description, assets: [] },
+        hints: { raw: '', html: '', plainText: '', assets: [] },
+        solution: { raw: '', html: '', plainText: '', assets: [] }
+      },
+      assets: [],
     });
   };
 
