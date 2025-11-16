@@ -11,6 +11,8 @@ import {
   SidebarMenuButton,
   SidebarMenu,
   SidebarMenuItem,
+  SidebarTrigger,
+  SidebarRail,
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SIDEBAR_LINKS, SidebarLink } from "@/assets/constants/sidebar-links";
@@ -60,10 +62,10 @@ export default function AppSidebar() {
 
   return (
     <Sidebar className="w-64 overflow-hidden" collapsible="icon">
-      <SidebarHeader className=" bg-yellow-500 h-[49px] flex justify-center">
+      <SidebarHeader className="bg-yellow-500 h-[49px] flex justify-center items-center px-2 border-b border-yellow-600">
         <SidebarMenu>
           <SidebarMenuItem className="p-2">
-            <SidebarMenuButton asChild className="m-0 ">
+            <SidebarMenuButton asChild className="m-0">
               <Link href={"/"} prefetch className="flex items-center gap-2">
                 <CloudLightning className="size-4" />
                 <p className="leading-0 font-bold text-md">IITian Squad</p>
@@ -79,6 +81,17 @@ export default function AppSidebar() {
             <SidebarMenu>
               <SidebarMenuRender
                 items={SIDEBAR_LINKS.adminManagement}
+                fullUrl={pathname}
+              />
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        <SidebarGroup>
+          <SidebarGroupLabel>Exam management</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuRender
+                items={SIDEBAR_LINKS.examManagement}
                 fullUrl={pathname}
               />
             </SidebarMenu>
@@ -112,6 +125,7 @@ export default function AppSidebar() {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
+      <SidebarRail />
     </Sidebar>
   );
 }

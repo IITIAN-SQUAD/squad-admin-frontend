@@ -1,4 +1,4 @@
-import { UserLock, Group, File, Users } from "lucide-react";
+import { UserLock, Group, File, Users, BookOpen, FileText, GraduationCap, BookMarked, FileQuestion, ImagePlus, Upload } from "lucide-react";
 
 export interface SidebarLink {
     title: string;
@@ -12,6 +12,38 @@ export const SIDEBAR_LINKS = {
             title: "Admin List",
             url: "/admin",
             icon: UserLock
+        }
+    ],
+    examManagement: [
+        {
+            title: "Exam Onboarding",
+            url: "/exam-management",
+            icon: GraduationCap
+        },
+        {
+            title: "Paper Onboarding",
+            url: "/paper-management",
+            icon: BookOpen
+        },
+        {
+            title: "Subject Management",
+            url: "/subject-management",
+            icon: BookMarked
+        },
+        {
+            title: "Question Onboarding",
+            url: "/question-onboarding",
+            icon: FileQuestion
+        },
+        {
+            title: "Bulk Upload",
+            url: "/bulk-upload",
+            icon: Upload
+        },
+        {
+            title: "Media Library",
+            url: "/media-library",
+            icon: ImagePlus
         }
     ],
     contentManagement: [
