@@ -91,6 +91,7 @@ const mockTopics: Topic[] = [
     name: "Kinematics",
     description: "Motion in one and two dimensions",
     subjectId: "4", // Under Mechanics
+    hierarchyPath: ["1", "4", "1"], // Physics -> Mechanics -> Kinematics
     order: 1,
     difficulty: "medium",
     tags: ["motion", "velocity", "acceleration"],
@@ -102,6 +103,7 @@ const mockTopics: Topic[] = [
     name: "Laws of Motion",
     description: "Newton's laws and applications",
     subjectId: "4", // Under Mechanics
+    hierarchyPath: ["1", "4", "2"], // Physics -> Mechanics -> Laws of Motion
     order: 2,
     difficulty: "medium",
     tags: ["newton", "force", "momentum"],
@@ -113,6 +115,7 @@ const mockTopics: Topic[] = [
     name: "Heat Transfer",
     description: "Conduction, convection, and radiation",
     subjectId: "5", // Under Thermodynamics
+    hierarchyPath: ["1", "5", "3"], // Physics -> Thermodynamics -> Heat Transfer
     order: 1,
     difficulty: "hard",
     tags: ["heat", "conduction", "convection"],
@@ -124,6 +127,7 @@ const mockTopics: Topic[] = [
     name: "Derivatives",
     description: "Differentiation and applications",
     subjectId: "6", // Under Calculus
+    hierarchyPath: ["2", "6", "4"], // Mathematics -> Calculus -> Derivatives
     order: 1,
     difficulty: "medium",
     tags: ["calculus", "derivatives", "limits"],

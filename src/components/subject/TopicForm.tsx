@@ -84,6 +84,7 @@ export default function TopicForm({
       description: data.description,
       subjectId: data.subjectId,
       parentTopicId: data.parentTopicId,
+      hierarchyPath: [], // Will be built by backend
       order: data.order,
       difficulty: data.difficulty,
       tags: tags,
