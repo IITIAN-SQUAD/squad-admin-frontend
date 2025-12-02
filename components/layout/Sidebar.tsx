@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   Sidebar,
   SidebarContent,
@@ -15,10 +15,11 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import { SIDEBAR_LINKS, SidebarLink } from "@/assets/constants/sidebar-links";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { CloudLightning } from "lucide-react";
+import { CloudLightning, LogOut } from "lucide-react";
 
 function SidebarMenuRender(props: { items: SidebarLink[]; fullUrl: string }) {
   return (
@@ -59,6 +60,29 @@ function SidebarMenuRender(props: { items: SidebarLink[]; fullUrl: string }) {
 
 export default function AppSidebar() {
   const pathname = usePathname() || "/";
+  const [adminName, setAdminName] = useState("Admin");
+  const [adminRole, setAdminRole] = useState("Administrator");
+
+  useEffect(() => {
+    // Get admin info from localStorage
+    const admin = localStorage.getItem('admin');
+    if (admin) {
+      try {
+        const adminData = JSON.parse(admin);
+        setAdminName(adminData.name || "Admin");
+        setAdminRole(adminData.role?.name || "Administrator");
+      } catch (e) {
+        // Use defaults
+      }
+    }
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('admin');
+    document.cookie = 'auth_token=; path=/; max-age=0';
+    window.location.href = '/login';
+  };
 
   return (
     <Sidebar className="w-64 overflow-hidden" collapsible="icon">
@@ -109,19 +133,31 @@ export default function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="overflow-hidden">
+      <SidebarFooter className="overflow-hidden border-t">
         <SidebarMenu className="overflow-hidden">
           <SidebarMenuItem className="p-2 overflow-hidden">
-            <SidebarMenuButton className="m-0 space-x-2 w-full h-auto">
-                <Avatar className="size-4">
-                  <AvatarImage src="/profile.jpg" alt="Profile" />
-                  <AvatarFallback>IS</AvatarFallback>
+            <div className="flex items-center justify-between w-full gap-2">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <Avatar className="size-8 flex-shrink-0">
+                  <AvatarFallback className="bg-yellow-400 text-gray-900 text-xs">
+                    {adminName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                  </AvatarFallback>
                 </Avatar>
-                <div className="w-full overflow-hidden">
-                  <p className="font-medium">Your Name</p>
-                  <p className="text-xs text-muted-foreground">Admin</p>
+                <div className="flex-1 min-w-0 overflow-hidden">
+                  <p className="font-medium text-sm truncate">{adminName}</p>
+                  <p className="text-xs text-muted-foreground truncate">{adminRole}</p>
                 </div>
-            </SidebarMenuButton>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleLogout}
+                className="flex-shrink-0 h-8 w-8 hover:bg-red-100 hover:text-red-600"
+                title="Logout"
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </div>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
