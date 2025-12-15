@@ -64,23 +64,87 @@ export default function AppSidebar() {
   const [adminRole, setAdminRole] = useState("Administrator");
 
   useEffect(() => {
-    // Get admin info from localStorage
-    const admin = localStorage.getItem('admin');
-    if (admin) {
+    // Fetch admin info from API
+    const fetchAdminData = async () => {
       try {
-        const adminData = JSON.parse(admin);
-        setAdminName(adminData.name || "Admin");
-        setAdminRole(adminData.role?.name || "Administrator");
-      } catch (e) {
-        // Use defaults
+        const token = localStorage.getItem('auth_token');
+        const hasCookies = document.cookie.includes('auth_token') || document.cookie.includes('jwt');
+        
+        if (!token && !hasCookies) {
+          console.log('[Sidebar] No token or cookies, skipping API call');
+          return;
+        }
+
+        console.log('[Sidebar] Fetching admin data from API...');
+        const authService = (await import('@/src/services/auth.service')).default;
+        const response = await authService.getAdminProfile();
+        
+        console.log('[Sidebar] Full API response:', JSON.stringify(response, null, 2));
+        
+        // Check if response has admin property or is the admin data directly
+        const adminData = response.admin || response;
+        console.log('[Sidebar] Admin data:', adminData);
+        console.log('[Sidebar] Admin name:', adminData.name);
+        
+        if (adminData && adminData.name) {
+          console.log('[Sidebar] Setting admin name to:', adminData.name);
+          setAdminName(adminData.name);
+          setAdminRole("Administrator");
+          
+          // Store in localStorage for future use
+          localStorage.setItem('admin', JSON.stringify(adminData));
+          console.log('[Sidebar] Admin data stored in localStorage');
+        } else {
+          console.warn('[Sidebar] No admin name in response');
+        }
+      } catch (error: any) {
+        console.error('[Sidebar] Failed to fetch admin data:', error);
+        console.error('[Sidebar] Error message:', error.message);
+        console.error('[Sidebar] Error stack:', error.stack);
+        
+        // Try to use cached data from localStorage
+        const admin = localStorage.getItem('admin');
+        if (admin && admin !== 'undefined' && admin !== 'null') {
+          try {
+            const adminData = JSON.parse(admin);
+            if (adminData.name) {
+              setAdminName(adminData.name);
+              setAdminRole("Administrator");
+            }
+          } catch (e) {
+            console.error('[Sidebar] Failed to parse cached admin data:', e);
+          }
+        }
       }
-    }
+    };
+
+    fetchAdminData();
+
+    // Listen for storage changes
+    window.addEventListener('storage', fetchAdminData);
+
+    return () => {
+      window.removeEventListener('storage', fetchAdminData);
+    };
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    // Clear local storage and cookies first
     localStorage.removeItem('auth_token');
     localStorage.removeItem('admin');
     document.cookie = 'auth_token=; path=/; max-age=0';
+    document.cookie = 'jwt=; path=/; max-age=0';
+    
+    // Call logout API (non-blocking)
+    try {
+      const authService = (await import('@/src/services/auth.service')).default;
+      await authService.logout();
+    } catch (error) {
+      // Ignore API errors, already cleared local data
+      console.warn('Logout API failed (non-critical):', error);
+    }
+    
+    // Redirect to login
     window.location.href = '/login';
   };
 
