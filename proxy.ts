@@ -4,7 +4,7 @@ import type { NextRequest } from 'next/server';
 // Public routes that don't require authentication
 const PUBLIC_ROUTES = ['/login', '/forgot-password', '/set-password'];
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Check if route is public
@@ -19,7 +19,7 @@ export function middleware(request: NextRequest) {
 
   // If accessing a protected route without auth, redirect to login
   if (!isPublicRoute && !isAuthenticated) {
-    console.log(`[Middleware] Redirecting ${pathname} to /login - No auth token`);
+    console.log(`[Proxy] Redirecting ${pathname} to /login - No auth token`);
     
     // Clear any stale cookies
     const response = NextResponse.redirect(new URL('/login', request.url));
@@ -34,13 +34,15 @@ export function middleware(request: NextRequest) {
 
   // If accessing login/auth pages while authenticated, redirect to home
   if (isPublicRoute && isAuthenticated && pathname !== '/set-password') {
-    console.log(`[Middleware] Redirecting ${pathname} to / - Already authenticated`);
+    console.log(`[Proxy] Redirecting ${pathname} to / - Already authenticated`);
     const homeUrl = new URL('/', request.url);
     return NextResponse.redirect(homeUrl);
   }
 
   return NextResponse.next();
 }
+
+export default proxy;
 
 // Configure which routes use this middleware
 export const config = {

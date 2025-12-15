@@ -1,9 +1,7 @@
 /**
  * API Client for backend communication
- * Base URL: http://localhost:8080
+ * Base URL: /api/backend
  */
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
 
 interface ApiResponse<T = any> {
   data?: T;
@@ -127,6 +125,6 @@ class ApiClient {
   }
 }
 
-// Export singleton instance
-export const apiClient = new ApiClient(API_BASE_URL);
+// Export singleton instance with proxied backend URL
+export const apiClient = new ApiClient('/api/backend');
 export default apiClient;
