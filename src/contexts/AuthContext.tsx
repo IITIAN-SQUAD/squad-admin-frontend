@@ -28,25 +28,71 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const token = localStorage.getItem('auth_token');
         const storedAdmin = localStorage.getItem('admin');
         
-        if (token && storedAdmin) {
-          // Verify token with backend
-          const response = await fetch('/api/auth/verify', {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-            },
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            setAdmin(data.admin);
-          } else {
-            // Token invalid, clear storage
+        console.log('[AuthContext] Checking auth - Token:', !!token, 'StoredAdmin:', storedAdmin);
+        
+        if (token) {
+          // If we have stored admin data, use it immediately
+          if (storedAdmin && storedAdmin !== 'undefined' && storedAdmin !== 'null') {
+            try {
+              const parsedAdmin = JSON.parse(storedAdmin);
+              console.log('[AuthContext] Using stored admin data:', parsedAdmin);
+              setAdmin(parsedAdmin);
+            } catch (e) {
+              console.error('[AuthContext] Failed to parse stored admin:', e);
+              localStorage.removeItem('admin');
+            }
+          }
+          
+          // Always try to fetch fresh data from backend
+          try {
+            console.log('[AuthContext] Fetching admin profile from API...');
+            const authService = (await import('@/src/services/auth.service')).default;
+            const response = await authService.getAdminProfile();
+            console.log('[AuthContext] API response:', response);
+            
+            // Convert API response to Admin type
+            const adminData: Admin = {
+              id: response.admin.id,
+              email: response.admin.email,
+              name: response.admin.name,
+              roleId: response.admin.roleId || response.admin.role.id,
+              role: {
+                id: response.admin.role.id,
+                name: response.admin.role.name,
+                type: response.admin.role.type as any,
+                permissions: response.admin.role.permissions as any[],
+                createdAt: new Date(),
+                updatedAt: new Date(),
+              },
+              isActive: response.admin.isActive ?? true,
+              passwordSet: response.admin.passwordSet ?? true,
+              lastLogin: response.admin.lastLogin ? new Date(response.admin.lastLogin) : undefined,
+              createdAt: response.admin.createdAt ? new Date(response.admin.createdAt) : new Date(),
+              updatedAt: response.admin.updatedAt ? new Date(response.admin.updatedAt) : new Date(),
+            };
+            
+            // Update stored admin data
+            console.log('[AuthContext] Storing admin data:', adminData);
+            localStorage.setItem('admin', JSON.stringify(adminData));
+            setAdmin(adminData);
+          } catch (apiError: any) {
+            // API call failed - token is likely invalid
+            console.error('[AuthContext] Failed to fetch admin profile from API:', apiError);
+            console.log('[AuthContext] Token invalid or API error, clearing session and redirecting to login');
+            
+            // Clear session and redirect to login
             localStorage.removeItem('auth_token');
             localStorage.removeItem('admin');
+            document.cookie = 'auth_token=; path=/; max-age=0';
+            document.cookie = 'jwt=; path=/; max-age=0';
+            setAdmin(null);
+            router.push('/login');
           }
+        } else {
+          console.log('[AuthContext] No token found, user not authenticated');
         }
       } catch (error) {
-        console.error('Auth check failed:', error);
+        console.error('[AuthContext] Auth check failed:', error);
       } finally {
         setIsLoading(false);
       }
@@ -74,10 +120,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAdmin(loggedInAdmin);
   };
 
-  const logout = () => {
+  const logout = async () => {
+    // Clear local storage and cookies first
     localStorage.removeItem('auth_token');
     localStorage.removeItem('admin');
+    document.cookie = 'auth_token=; path=/; max-age=0';
+    document.cookie = 'jwt=; path=/; max-age=0';
+    
     setAdmin(null);
+    
+    // Call logout API (non-blocking)
+    try {
+      const authService = (await import('@/src/services/auth.service')).default;
+      await authService.logout();
+    } catch (error) {
+      // Ignore API errors, already cleared local data
+      console.warn('Logout API failed (non-critical):', error);
+    }
+    
     router.push('/login');
   };
 

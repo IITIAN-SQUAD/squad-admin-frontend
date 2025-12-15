@@ -16,7 +16,9 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 export default function Navbar() {
   const [isLoggedIn, setIsLoggedIn] = React.useState(false);
-  const [adminName, setAdminName] = React.useState("Admin User");
+  const [adminName, setAdminName] = React.useState("");
+  const [adminRole, setAdminRole] = React.useState("");
+  const [adminEmail, setAdminEmail] = React.useState("");
 
   const checkAuth = React.useCallback(() => {
     const token = localStorage.getItem('auth_token');
@@ -25,7 +27,9 @@ export default function Navbar() {
       setIsLoggedIn(true);
       try {
         const adminData = JSON.parse(admin);
-        setAdminName(adminData.name || "Admin User");
+        setAdminName(adminData.name || "");
+        setAdminEmail(adminData.email || "");
+        setAdminRole(adminData.role?.name || "");
       } catch (e) {
         setIsLoggedIn(false);
       }
@@ -54,13 +58,23 @@ export default function Navbar() {
     };
   }, [checkAuth]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    // Clear local storage and cookies first
     localStorage.removeItem('auth_token');
     localStorage.removeItem('admin');
-    
-    // Clear cookie
     document.cookie = 'auth_token=; path=/; max-age=0';
+    document.cookie = 'jwt=; path=/; max-age=0';
     
+    // Call logout API (non-blocking)
+    try {
+      const authService = (await import('@/src/services/auth.service')).default;
+      await authService.logout();
+    } catch (error) {
+      // Ignore API errors, already cleared local data
+      console.warn('Logout API failed (non-critical):', error);
+    }
+    
+    // Redirect to login
     setIsLoggedIn(false);
     window.location.href = '/login';
   };
@@ -84,8 +98,13 @@ export default function Navbar() {
                 <div className="flex flex-col space-y-1">
                   <p className="text-sm font-medium leading-none">{adminName}</p>
                   <p className="text-xs leading-none text-muted-foreground">
-                    Super Admin
+                    {adminEmail}
                   </p>
+                  {adminRole && (
+                    <p className="text-xs leading-none text-muted-foreground font-medium mt-1">
+                      {adminRole}
+                    </p>
+                  )}
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />

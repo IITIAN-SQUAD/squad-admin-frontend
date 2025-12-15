@@ -1,5 +1,18 @@
 import { z } from "zod";
 
+// Step 1: Request OTP with email only
+export const requestOtpSchema = z.object({
+  email: z.string().email("Invalid email address"),
+});
+
+// Step 2: Login with email, OTP, and password
+export const loginWithOtpSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  otp: z.string().length(6, "OTP must be 6 digits").regex(/^\d+$/, "OTP must contain only numbers"),
+  password: z.string().min(1, "Password is required"),
+});
+
+// Legacy schemas (keep for backward compatibility)
 export const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(1, "Password is required"),
@@ -56,6 +69,8 @@ export const roleSchema = z.object({
   description: z.string().max(200, "Description too long").optional(),
 });
 
+export type RequestOtpFormData = z.infer<typeof requestOtpSchema>;
+export type LoginWithOtpFormData = z.infer<typeof loginWithOtpSchema>;
 export type LoginFormData = z.infer<typeof loginSchema>;
 export type MFAVerificationFormData = z.infer<typeof mfaVerificationSchema>;
 export type SetPasswordFormData = z.infer<typeof setPasswordSchema>;

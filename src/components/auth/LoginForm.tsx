@@ -11,23 +11,34 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CloudLightning, Eye, EyeOff, AlertCircle, Mail, ShieldCheck } from "lucide-react";
 import Link from "next/link";
-import { loginSchema, LoginFormData, mfaVerificationSchema, MFAVerificationFormData } from "@/src/schemas/admin";
+import { requestOtpSchema, RequestOtpFormData, loginWithOtpSchema, LoginWithOtpFormData } from "@/src/schemas/admin";
+import authService from "@/src/services/auth.service";
 
 export default function LoginForm() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showMFA, setShowMFA] = useState(false);
-  const [sessionToken, setSessionToken] = useState<string>("");
+  const [step, setStep] = useState<'email' | 'otp'>('email');
   const [userEmail, setUserEmail] = useState<string>("");
   const [resendTimer, setResendTimer] = useState(0);
 
-  const loginForm = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
+  // Get return URL from query params
+  const getReturnUrl = () => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('returnUrl') || '/';
+    }
+    return '/';
+  };
+
+  // Step 1: Request OTP form
+  const emailForm = useForm<RequestOtpFormData>({
+    resolver: zodResolver(requestOtpSchema),
   });
 
-  const mfaForm = useForm<MFAVerificationFormData>({
-    resolver: zodResolver(mfaVerificationSchema),
+  // Step 2: Login with OTP and password form
+  const loginForm = useForm<LoginWithOtpFormData>({
+    resolver: zodResolver(loginWithOtpSchema),
   });
 
   React.useEffect(() => {
@@ -37,94 +48,67 @@ export default function LoginForm() {
     }
   }, [resendTimer]);
 
-  const onLoginSubmit = async (data: LoginFormData) => {
+  // Step 1: Request OTP
+  const onEmailSubmit = async (data: RequestOtpFormData) => {
     try {
       setError(null);
       
-      // TODO: Replace with actual API call
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-
-      const result = await response.json();
+      // Call backend API to request OTP
+      await authService.requestOtp(data.email);
       
-      // Show MFA screen (UI only, backend will validate)
-      setSessionToken(result.sessionToken || 'temp-session');
+      // Move to step 2
       setUserEmail(data.email);
-      setShowMFA(true);
+      setStep('otp');
       setResendTimer(60);
-      mfaForm.setValue('email', data.email);
-      mfaForm.setValue('sessionToken', result.sessionToken || 'temp-session');
+      loginForm.setValue('email', data.email);
     } catch (err: any) {
-      // Just show MFA for demo
-      setSessionToken('temp-session');
-      setUserEmail(data.email);
-      setShowMFA(true);
-      setResendTimer(60);
-      mfaForm.setValue('email', data.email);
-      mfaForm.setValue('sessionToken', 'temp-session');
+      setError(err.message || 'Failed to send OTP. Please check your email.');
     }
   };
 
-  const onMFASubmit = async (data: MFAVerificationFormData) => {
+  // Step 2: Login with OTP and password
+  const onLoginSubmit = async (data: LoginWithOtpFormData) => {
     try {
       setError(null);
       
-      // TODO: Replace with actual API call
-      const response = await fetch('/api/auth/verify-mfa', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-
-      const result = await response.json();
-      
-      // Store mock data and redirect (backend will validate in production)
-      const token = result.token || 'mock-token';
-      const adminData = result.admin || {
-        id: '1',
-        name: 'Admin User',
+      // Login with OTP and password
+      const result = await authService.loginWithOtp({
         email: data.email,
-        role: { name: 'Super Admin', type: 'super_admin' }
-      };
+        otp: data.otp,
+        password: data.password,
+      });
       
-      localStorage.setItem('auth_token', token);
-      localStorage.setItem('admin', JSON.stringify(adminData));
+      // Store auth data
+      localStorage.setItem('auth_token', result.token);
+      localStorage.setItem('admin', JSON.stringify(result.admin));
       
-      // Set cookie for middleware
-      document.cookie = `auth_token=${token}; path=/; max-age=604800`; // 7 days
+      // Set cookies for middleware
+      document.cookie = `auth_token=${result.token}; path=/; max-age=604800`; // 7 days
+      document.cookie = `jwt=${result.token}; path=/; max-age=604800`; // 7 days
       
-      router.push('/');
+      console.log('Login successful, admin data:', result.admin);
+      
+      // Redirect to return URL or dashboard
+      const returnUrl = getReturnUrl();
+      console.log('Login successful, redirecting to:', returnUrl);
+      router.push(returnUrl);
       router.refresh(); // Force refresh to update middleware
     } catch (err: any) {
-      // For demo, just login anyway
-      const token = 'mock-token';
-      const adminData = {
-        id: '1',
-        name: 'Admin User',
-        email: data.email,
-        role: { name: 'Super Admin', type: 'super_admin' }
-      };
-      
-      localStorage.setItem('auth_token', token);
-      localStorage.setItem('admin', JSON.stringify(adminData));
-      
-      // Set cookie for middleware
-      document.cookie = `auth_token=${token}; path=/; max-age=604800`; // 7 days
-      
-      router.push('/');
-      router.refresh(); // Force refresh to update middleware
+      setError(err.message || 'Invalid credentials. Please try again.');
     }
   };
 
   const handleResendOTP = async () => {
     if (resendTimer > 0) return;
     
-    // Just reset timer (backend will handle actual resend)
-    setResendTimer(60);
-    setError(null);
+    try {
+      setError(null);
+      // Request new OTP from backend
+      await authService.requestOtp(userEmail);
+      setResendTimer(60);
+    } catch (err: any) {
+      setError(err.message || 'Failed to resend OTP');
+    }
   };
 
   return (
@@ -133,7 +117,7 @@ export default function LoginForm() {
         <CardHeader className="space-y-4 text-center">
           <div className="flex justify-center">
             <div className="w-16 h-16 bg-yellow-400 rounded-full flex items-center justify-center">
-              {showMFA ? (
+              {step === 'otp' ? (
                 <ShieldCheck className="w-10 h-10 text-gray-900" />
               ) : (
                 <CloudLightning className="w-10 h-10 text-gray-900" />
@@ -142,20 +126,20 @@ export default function LoginForm() {
           </div>
           <div>
             <CardTitle className="text-2xl font-bold">
-              {showMFA ? "Verify Your Identity" : "IITian Squad Admin"}
+              {step === 'otp' ? "Verify & Login" : "IITian Squad Admin"}
             </CardTitle>
             <CardDescription>
-              {showMFA 
-                ? `Enter the 6-digit code sent to ${userEmail}`
-                : "Sign in to access the admin dashboard"
+              {step === 'otp' 
+                ? `Enter OTP sent to ${userEmail} and your password`
+                : "Enter your email to receive OTP"
               }
             </CardDescription>
           </div>
         </CardHeader>
         <CardContent>
-          {!showMFA ? (
-            // Login Form
-            <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
+          {step === 'email' ? (
+            // Step 1: Request OTP with email
+            <form onSubmit={emailForm.handleSubmit(onEmailSubmit)} className="space-y-4">
               {error && (
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
@@ -164,16 +148,65 @@ export default function LoginForm() {
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">Email Address</Label>
                 <Input
                   id="email"
                   type="email"
                   placeholder="admin@example.com"
-                  {...loginForm.register("email")}
-                  className={loginForm.formState.errors.email ? "border-red-500" : ""}
+                  {...emailForm.register("email")}
+                  className={emailForm.formState.errors.email ? "border-red-500" : ""}
+                  autoFocus
                 />
-                {loginForm.formState.errors.email && (
-                  <p className="text-sm text-red-500">{loginForm.formState.errors.email.message}</p>
+                {emailForm.formState.errors.email && (
+                  <p className="text-sm text-red-500">{emailForm.formState.errors.email.message}</p>
+                )}
+              </div>
+
+              <Button 
+                type="submit" 
+                className="w-full bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-medium"
+                disabled={emailForm.formState.isSubmitting}
+              >
+                {emailForm.formState.isSubmitting ? "Sending OTP..." : "Send OTP"}
+              </Button>
+
+              <div className="mt-6 text-center text-sm text-gray-600">
+                <p>Need access? Contact your super admin</p>
+              </div>
+            </form>
+          ) : (
+            // Step 2: Login with OTP and password
+            <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
+              {error && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+
+              <Alert className="border-blue-200 bg-blue-50">
+                <Mail className="h-4 w-4 text-blue-600" />
+                <AlertDescription className="text-blue-800">
+                  We've sent a 6-digit verification code to your email. Please check your inbox.
+                </AlertDescription>
+              </Alert>
+
+              <input type="hidden" {...loginForm.register("email")} />
+
+              <div className="space-y-2">
+                <Label htmlFor="otp">Verification Code</Label>
+                <Input
+                  id="otp"
+                  type="text"
+                  placeholder="Enter 6-digit code"
+                  maxLength={6}
+                  {...loginForm.register("otp")}
+                  className={`text-center text-2xl tracking-widest ${loginForm.formState.errors.otp ? "border-red-500" : ""}`}
+                  autoComplete="off"
+                  autoFocus
+                />
+                {loginForm.formState.errors.otp && (
+                  <p className="text-sm text-red-500">{loginForm.formState.errors.otp.message}</p>
                 )}
               </div>
 
@@ -216,54 +249,6 @@ export default function LoginForm() {
                 {loginForm.formState.isSubmitting ? "Signing in..." : "Sign In"}
               </Button>
 
-              <div className="mt-6 text-center text-sm text-gray-600">
-                <p>Need access? Contact your super admin</p>
-              </div>
-            </form>
-          ) : (
-            // MFA Verification Form
-            <form onSubmit={mfaForm.handleSubmit(onMFASubmit)} className="space-y-4">
-              {error && (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-
-              <Alert className="border-blue-200 bg-blue-50">
-                <Mail className="h-4 w-4 text-blue-600" />
-                <AlertDescription className="text-blue-800">
-                  We've sent a 6-digit verification code to your email. Please check your inbox.
-                </AlertDescription>
-              </Alert>
-
-              <input type="hidden" {...mfaForm.register("email")} />
-              <input type="hidden" {...mfaForm.register("sessionToken")} />
-
-              <div className="space-y-2">
-                <Label htmlFor="otp">Verification Code</Label>
-                <Input
-                  id="otp"
-                  type="text"
-                  placeholder="Enter 6-digit code"
-                  maxLength={6}
-                  {...mfaForm.register("otp")}
-                  className={`text-center text-2xl tracking-widest ${mfaForm.formState.errors.otp ? "border-red-500" : ""}`}
-                  autoComplete="off"
-                />
-                {mfaForm.formState.errors.otp && (
-                  <p className="text-sm text-red-500">{mfaForm.formState.errors.otp.message}</p>
-                )}
-              </div>
-
-              <Button 
-                type="submit" 
-                className="w-full bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-medium"
-                disabled={mfaForm.formState.isSubmitting}
-              >
-                {mfaForm.formState.isSubmitting ? "Verifying..." : "Verify Code"}
-              </Button>
-
               <div className="text-center space-y-2">
                 <p className="text-sm text-gray-600">
                   Didn't receive the code?
@@ -283,13 +268,14 @@ export default function LoginForm() {
                 type="button"
                 variant="outline"
                 onClick={() => {
-                  setShowMFA(false);
+                  setStep('email');
                   setError(null);
-                  mfaForm.reset();
+                  loginForm.reset();
+                  emailForm.reset();
                 }}
                 className="w-full"
               >
-                Back to Login
+                Back to Email
               </Button>
             </form>
           )}
