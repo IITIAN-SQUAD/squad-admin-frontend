@@ -1,25 +1,40 @@
 "use client";
+
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
-  SidebarHeader,
-  SidebarGroupLabel,
   SidebarGroupContent,
-  SidebarMenuButton,
+  SidebarGroupLabel,
+  SidebarHeader,
   SidebarMenu,
+  SidebarMenuButton,
   SidebarMenuItem,
-  SidebarTrigger,
   SidebarRail,
 } from "@/components/ui/sidebar";
+import {
+  CloudLightning,
+  LayoutDashboard,
+  Users,
+  FileText,
+  BookOpen,
+  FolderOpen,
+  UserCircle,
+  LogOut,
+  FileQuestion,
+  Upload,
+  Image,
+  Layers,
+  BookMarked,
+  ClipboardList,
+} from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { SIDEBAR_LINKS, SidebarLink } from "@/assets/constants/sidebar-links";
-import { usePathname } from "next/navigation";
-import Link from "next/link";
-import { CloudLightning, LogOut } from "lucide-react";
 
 function SidebarMenuRender(props: { items: SidebarLink[]; fullUrl: string }) {
   return (
@@ -66,15 +81,20 @@ export default function AppSidebar() {
   useEffect(() => {
     // Fetch admin info from API
     const fetchAdminData = async () => {
-      try {
-        const token = localStorage.getItem('auth_token');
-        const hasCookies = document.cookie.includes('auth_token') || document.cookie.includes('jwt');
-        
-        if (!token && !hasCookies) {
-          console.log('[Sidebar] No token or cookies, skipping API call');
-          return;
-        }
+      console.log('[Sidebar] useEffect triggered');
+      const token = localStorage.getItem('auth_token');
+      const hasCookies = document.cookie.includes('auth_token') || document.cookie.includes('jwt');
+      
+      console.log('[Sidebar] Token:', !!token, 'Cookies:', hasCookies);
+      
+      // Don't redirect here - let middleware handle it
+      // Just skip API call if no auth
+      if (!token && !hasCookies) {
+        console.log('[Sidebar] No token or cookies, skipping API call');
+        return;
+      }
 
+      try {
         console.log('[Sidebar] Fetching admin data from API...');
         const authService = (await import('@/src/services/auth.service')).default;
         const response = await authService.getAdminProfile();
@@ -100,9 +120,20 @@ export default function AppSidebar() {
       } catch (error: any) {
         console.error('[Sidebar] Failed to fetch admin data:', error);
         console.error('[Sidebar] Error message:', error.message);
-        console.error('[Sidebar] Error stack:', error.stack);
+        console.error('[Sidebar] Error status:', error.status);
         
-        // Try to use cached data from localStorage
+        // If 401 unauthorized, clear session and redirect to login
+        if (error.status === 401 || error.message?.includes('401') || error.message?.includes('Unauthorized')) {
+          console.log('[Sidebar] 401 error, clearing session and redirecting to login');
+          localStorage.removeItem('auth_token');
+          localStorage.removeItem('admin');
+          document.cookie = 'auth_token=; path=/; max-age=0';
+          document.cookie = 'jwt=; path=/; max-age=0';
+          window.location.href = '/login';
+          return;
+        }
+        
+        // Try to use cached data from localStorage for other errors
         const admin = localStorage.getItem('admin');
         if (admin && admin !== 'undefined' && admin !== 'null') {
           try {

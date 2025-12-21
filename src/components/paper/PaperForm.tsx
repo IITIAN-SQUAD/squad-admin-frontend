@@ -37,21 +37,19 @@ export default function PaperForm({ initialData, exams, onSubmit }: PaperFormPro
       date: initialData?.date || new Date(),
       totalQuestions: initialData?.totalQuestions || 0,
       totalMarks: initialData?.totalMarks || 0,
-      duration: initialData?.duration || 3600, // 1 hour default
+      duration: initialData?.duration || 60, // 60 minutes (1 hour) default
     },
   });
 
   const examId = watch("examId");
+  const dateValue = watch("date");
 
-  const formatDurationForInput = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-  };
-
-  const parseDurationFromInput = (timeString: string) => {
-    const [hours, minutes] = timeString.split(':').map(Number);
-    return (hours * 3600) + (minutes * 60);
+  // Format date for input field (YYYY-MM-DD)
+  const formatDateForInput = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   };
 
   const onFormSubmit = (data: PaperFormData) => {
@@ -105,11 +103,12 @@ export default function PaperForm({ initialData, exams, onSubmit }: PaperFormPro
           <Input
             id="date"
             type="date"
-            {...register("date", { 
-              setValueAs: (value) => value ? new Date(value) : new Date() 
-            })}
             className="mt-1"
-            defaultValue={initialData?.date?.toISOString().split('T')[0]}
+            value={dateValue ? formatDateForInput(dateValue) : ''}
+            onChange={(e) => {
+              const newDate = e.target.value ? new Date(e.target.value) : new Date();
+              setValue("date", newDate);
+            }}
           />
           {errors.date && (
             <p className="text-red-500 text-sm mt-1">{errors.date.message}</p>
@@ -149,22 +148,23 @@ export default function PaperForm({ initialData, exams, onSubmit }: PaperFormPro
         </div>
 
         <div>
-          <Label htmlFor="duration">Duration (HH:MM) *</Label>
+          <Label htmlFor="duration">Duration (minutes) *</Label>
           <Input
             id="duration"
-            type="time"
+            type="number"
             className="mt-1"
-            defaultValue={formatDurationForInput(initialData?.duration || 3600)}
-            onChange={(e) => {
-              const seconds = parseDurationFromInput(e.target.value);
-              setValue("duration", seconds);
-            }}
+            placeholder="180"
+            min="1"
+            defaultValue={initialData?.duration || 60}
+            {...register("duration", { 
+              valueAsNumber: true
+            })}
           />
           {errors.duration && (
             <p className="text-red-500 text-sm mt-1">{errors.duration.message}</p>
           )}
           <p className="text-sm text-gray-500 mt-1">
-            Set the total duration for the paper
+            Enter duration in minutes (e.g., 180 for 3 hours)
           </p>
         </div>
       </div>

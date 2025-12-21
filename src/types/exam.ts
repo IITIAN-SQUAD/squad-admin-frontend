@@ -3,12 +3,23 @@ export interface ExamMetadata {
   value: string;
 }
 
+export type ExamStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+
+export interface SubjectInfo {
+  id: string;
+  name: string;
+  code: string;
+}
+
 export interface Exam {
   id: string;
   name: string;
   description: string;
   countries: string[];
+  subject_ids?: string[];
+  subjects?: SubjectInfo[];
   metadata: ExamMetadata[];
+  status: ExamStatus;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -151,12 +162,11 @@ export interface Question {
 export interface PaperSection {
   id: string;
   name: string;
-  description?: string; // Made optional as requested
-  paperId: string;
+  description?: string;
   parentSectionId?: string; // For nested sections
   totalMarks: number;
   totalQuestions: number;
-  duration?: number; // in seconds
+  duration?: number; // in minutes
   order: number;
   questions: Question[];
   guidelines?: SectionGuidelines; // Added guidelines support
@@ -164,15 +174,19 @@ export interface PaperSection {
   updatedAt: Date;
 }
 
+export type PaperStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+
 export interface Paper {
   id: string;
   name: string;
   examId: string;
+  examName?: string;
   date: Date;
   totalQuestions: number;
   totalMarks: number;
-  duration: number; // in seconds
+  duration: number; // in minutes
   sections: PaperSection[];
+  status: PaperStatus;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import PageHeader from "@/src/components/page/page-header";
 import PageTitle from "@/src/components/page/page-title";
 import PageWrapper from "@/src/components/page/page-wrapper";
 import { Button } from "@/components/ui/button";
-import { Plus, Search, Edit, Trash2, FileText, ChevronRight, ChevronDown } from "lucide-react";
+import { Plus, Search, Edit, Trash2, FileText, ChevronRight, ChevronDown, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -32,107 +32,147 @@ import {
 import PaperForm from "@/src/components/paper/PaperForm";
 import { PaperEditor } from "@/src/components/paper/PaperEditor";
 import { Paper, Exam, PaperSection } from "@/src/types/exam";
-
-// Mock data
-const mockExams: Exam[] = [
-  {
-    id: "1",
-    name: "JEE Main 2024",
-    description: "Joint Entrance Examination Main",
-    countries: ["India"],
-    metadata: [],
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: "2",
-    name: "NEET 2024",
-    description: "National Eligibility cum Entrance Test",
-    countries: ["India"],
-    metadata: [],
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-];
-
-const mockPapers: Paper[] = [
-  {
-    id: "1",
-    name: "JEE Main 2024 - Paper 1",
-    examId: "1",
-    date: new Date("2024-04-15"),
-    totalQuestions: 90,
-    totalMarks: 300,
-    duration: 10800, // 3 hours in seconds
-    sections: [],
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: "2",
-    name: "JEE Main 2024 - Paper 2",
-    examId: "1",
-    date: new Date("2024-04-16"),
-    totalQuestions: 82,
-    totalMarks: 390,
-    duration: 10800,
-    sections: [],
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-];
+import examService from "@/src/services/exam.service";
+import paperService from "@/src/services/paper.service";
 
 export default function PaperManagementPage() {
-  const [selectedExamId, setSelectedExamId] = useState<string>("all");
-  const [papers, setPapers] = useState<Paper[]>(mockPapers);
+  const [papers, setPapers] = useState<Paper[]>([]);
+  const [exams, setExams] = useState<Exam[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedExamFilter, setSelectedExamFilter] = useState("all");
+  const [selectedExamId, setSelectedExamId] = useState("all");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingPaper, setEditingPaper] = useState<Paper | null>(null);
+  const [editingPaperId, setEditingPaperId] = useState<string | null>(null);
   const [selectedPaper, setSelectedPaper] = useState<Paper | null>(null);
+  const [isLoadingExams, setIsLoadingExams] = useState(true);
+  const [isLoadingPapers, setIsLoadingPapers] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const fetchExams = useCallback(async () => {
+    try {
+      setIsLoadingExams(true);
+      const data = await examService.getAllExams();
+      setExams(data);
+    } catch (error: any) {
+      console.error('Failed to fetch exams:', error);
+      alert(error.message || 'Failed to fetch exams');
+    } finally {
+      setIsLoadingExams(false);
+    }
+  }, []);
+
+  // Fetch exams on mount
+  useEffect(() => {
+    fetchExams();
+  }, [fetchExams]);
+
+  const fetchPapers = useCallback(async (examId?: string) => {
+    try {
+      setIsLoadingPapers(true);
+      const data = await paperService.getAllPapers(examId && examId !== 'all' ? examId : undefined);
+      setPapers(data);
+    } catch (error: any) {
+      console.error('Failed to fetch papers:', error);
+      alert(error.message || 'Failed to fetch papers');
+    } finally {
+      setIsLoadingPapers(false);
+    }
+  }, []);
+
+  // Fetch papers when exam filter changes (including initial load)
+  useEffect(() => {
+    const examIdToFetch = selectedExamId !== 'all' ? selectedExamId : undefined;
+    fetchPapers(examIdToFetch);
+  }, [selectedExamId, fetchPapers]);
 
   const filteredPapers = papers.filter(paper => {
     const matchesSearch = paper.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesExam = !selectedExamId || selectedExamId === "all" || paper.examId === selectedExamId;
-    return matchesSearch && matchesExam;
+    return matchesSearch;
   });
 
-  const handleCreatePaper = (paperData: Omit<Paper, "id" | "createdAt" | "updatedAt" | "sections">) => {
-    const newPaper: Paper = {
-      ...paperData,
-      id: Date.now().toString(),
-      sections: [],
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    setPapers([...papers, newPaper]);
-    setIsCreateDialogOpen(false);
-  };
-
-  const handleUpdatePaper = (paperData: Omit<Paper, "id" | "createdAt" | "updatedAt" | "sections">) => {
-    if (!editingPaper) return;
-    
-    const updatedPaper: Paper = {
-      ...paperData,
-      id: editingPaper.id,
-      sections: editingPaper.sections,
-      createdAt: editingPaper.createdAt,
-      updatedAt: new Date(),
-    };
-    
-    setPapers(papers.map(paper => paper.id === editingPaper.id ? updatedPaper : paper));
-    setEditingPaper(null);
-  };
-
-  const handleDeletePaper = (paperId: string) => {
-    if (confirm("Are you sure you want to delete this paper?")) {
-      setPapers(papers.filter(paper => paper.id !== paperId));
+  const handleCreatePaper = async (paperData: Omit<Paper, "id" | "createdAt" | "updatedAt" | "sections">) => {
+    try {
+      setIsSubmitting(true);
+      const newPaper = await paperService.createPaper({
+        examId: paperData.examId,
+        name: paperData.name,
+        date: paperData.date,
+        totalQuestions: paperData.totalQuestions,
+        totalMarks: paperData.totalMarks,
+        duration: paperData.duration,
+      });
+      setPapers([...papers, newPaper]);
+      setIsCreateDialogOpen(false);
+      alert('Paper created successfully');
+    } catch (error: any) {
+      console.error('Failed to create paper:', error);
+      alert(error.message || 'Failed to create paper');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const formatDuration = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    return `${hours}h ${minutes}m`;
+  const handleUpdatePaper = async (paperData: Omit<Paper, "id" | "createdAt" | "updatedAt" | "sections">) => {
+    if (!editingPaper) return;
+    
+    try {
+      setIsSubmitting(true);
+      const updatedPaper = await paperService.updatePaper(editingPaper.id, {
+        name: paperData.name,
+        date: paperData.date,
+        totalQuestions: paperData.totalQuestions,
+        totalMarks: paperData.totalMarks,
+        duration: paperData.duration,
+      });
+      setPapers(papers.map(paper => paper.id === editingPaper.id ? updatedPaper : paper));
+      setEditingPaper(null);
+      alert('Paper updated successfully');
+    } catch (error: any) {
+      console.error('Failed to update paper:', error);
+      alert(error.message || 'Failed to update paper');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeletePaper = async (paperId: string) => {
+    if (!confirm("Are you sure you want to delete this paper? It will be archived.")) return;
+    
+    try {
+      await paperService.deletePaper(paperId);
+      fetchPapers(selectedExamId !== 'all' ? selectedExamId : undefined); // Refresh list
+      alert('Paper archived successfully');
+    } catch (error: any) {
+      console.error('Failed to delete paper:', error);
+      alert(error.message || 'Failed to delete paper');
+    }
+  };
+
+  const handleTogglePaperStatus = async (paperId: string, currentStatus: string) => {
+    const newStatus = currentStatus === 'DRAFT' ? 'PUBLISHED' : 'DRAFT';
+    if (!confirm(`Change status to ${newStatus}?`)) return;
+    
+    try {
+      await paperService.updatePaperStatus(paperId, newStatus as any);
+      fetchPapers(selectedExamId !== 'all' ? selectedExamId : undefined); // Refresh list
+      alert(`Status updated to ${newStatus}`);
+    } catch (error: any) {
+      console.error('Failed to update status:', error);
+      alert(error.message || 'Failed to update status');
+    }
+  };
+
+  const formatDuration = (minutes: number) => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    if (hours > 0 && mins > 0) {
+      return `${hours}h ${mins}m`;
+    } else if (hours > 0) {
+      return `${hours}h`;
+    } else {
+      return `${mins}m`;
+    }
   };
 
   const formatDate = (date: Date) => {
@@ -174,7 +214,7 @@ export default function PaperManagementPage() {
               <DialogHeader>
                 <DialogTitle>Create New Paper</DialogTitle>
               </DialogHeader>
-              <PaperForm onSubmit={handleCreatePaper} exams={mockExams} />
+              <PaperForm onSubmit={handleCreatePaper} exams={exams} />
             </DialogContent>
           </Dialog>
         </div>
@@ -196,7 +236,7 @@ export default function PaperManagementPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Exams</SelectItem>
-              {mockExams.map((exam) => (
+              {exams.map((exam) => (
                 <SelectItem key={exam.id} value={exam.id}>
                   {exam.name}
                 </SelectItem>
@@ -205,33 +245,55 @@ export default function PaperManagementPage() {
           </Select>
         </div>
 
+        {/* Loading State */}
+        {isLoadingPapers && (
+          <div className="flex justify-center items-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-yellow-500" />
+            <span className="ml-2 text-gray-600">Loading papers...</span>
+          </div>
+        )}
+
         {/* Papers Table */}
-        <div className="border rounded-lg">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Paper Name</TableHead>
-                <TableHead>Exam</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Questions</TableHead>
-                <TableHead>Marks</TableHead>
-                <TableHead>Duration</TableHead>
-                <TableHead>Sections</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+        {!isLoadingPapers && (
+          <div className="border rounded-lg">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Paper Name</TableHead>
+                  <TableHead>Exam</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Questions</TableHead>
+                  <TableHead>Marks</TableHead>
+                  <TableHead>Duration</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
               {filteredPapers.map((paper) => {
-                const exam = mockExams.find(e => e.id === paper.examId);
+                const exam = exams.find(e => e.id === paper.examId);
                 return (
                   <TableRow key={paper.id}>
                     <TableCell>{paper.name}</TableCell>
-                    <TableCell>{exam?.name || "Unknown"}</TableCell>
+                    <TableCell>{paper.examName || exam?.name || "Unknown"}</TableCell>
                     <TableCell>{formatDate(paper.date)}</TableCell>
                     <TableCell>{paper.totalQuestions}</TableCell>
                     <TableCell>{paper.totalMarks}</TableCell>
                     <TableCell>{formatDuration(paper.duration)}</TableCell>
-                    <TableCell>{paper.sections.length} sections</TableCell>
+                    <TableCell>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleTogglePaperStatus(paper.id, paper.status)}
+                        className={`text-xs ${
+                          paper.status === 'PUBLISHED' 
+                            ? 'bg-green-50 text-green-700 border-green-200' 
+                            : 'bg-yellow-50 text-yellow-700 border-yellow-200'
+                        }`}
+                      >
+                        {paper.status}
+                      </Button>
+                    </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         <Button
@@ -259,7 +321,7 @@ export default function PaperManagementPage() {
                             <PaperForm 
                               initialData={editingPaper || undefined}
                               onSubmit={handleUpdatePaper}
-                              exams={mockExams}
+                              exams={exams}
                             />
                           </DialogContent>
                         </Dialog>
@@ -276,11 +338,13 @@ export default function PaperManagementPage() {
                   </TableRow>
                 );
               })}
-            </TableBody>
-          </Table>
-        </div>
+              </TableBody>
+            </Table>
+          </div>
+        )}
 
-        {filteredPapers.length === 0 && (
+        {/* Empty State */}
+        {!isLoadingPapers && filteredPapers.length === 0 && (
           <div className="text-center py-8 text-gray-500">
             {searchTerm || (selectedExamId && selectedExamId !== "all") ? "No papers found matching your criteria." : "No papers created yet."}
           </div>
