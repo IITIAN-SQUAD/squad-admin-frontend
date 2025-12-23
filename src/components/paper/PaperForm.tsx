@@ -60,6 +60,7 @@ export default function PaperForm({ initialData, exams, onSubmit }: PaperFormPro
       totalQuestions: data.totalQuestions,
       totalMarks: data.totalMarks,
       duration: data.duration,
+      status: "DRAFT",
     });
   };
 

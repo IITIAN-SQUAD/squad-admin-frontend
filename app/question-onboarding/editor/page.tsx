@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, Suspense } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,17 +19,11 @@ import { Question, QuestionType, Exam, Paper } from "@/src/types/exam";
 import { RichContentEditor } from '@/src/components/ui/rich-content-editor';
 import { RichContentRenderer } from '@/src/components/ui/rich-content-renderer';
 import { QuestionPreview } from '@/src/components/question-preview';
-
-// Mock data
-const mockExams: Exam[] = [
-  { id: "1", name: "JEE Main 2024", description: "Joint Entrance Examination Main", countries: ["India"], metadata: [], createdAt: new Date(), updatedAt: new Date() },
-  { id: "2", name: "NEET 2024", description: "National Eligibility cum Entrance Test", countries: ["India"], metadata: [], createdAt: new Date(), updatedAt: new Date() },
-];
-
-const mockPapers: Paper[] = [
-  { id: "1", name: "JEE Main 2024 - Paper 1", examId: "1", date: new Date("2024-04-15"), totalQuestions: 90, totalMarks: 300, duration: 10800, sections: [], createdAt: new Date(), updatedAt: new Date() },
-  { id: "2", name: "JEE Main 2024 - Paper 2", examId: "1", date: new Date("2024-04-16"), totalQuestions: 82, totalMarks: 390, duration: 10800, sections: [], createdAt: new Date(), updatedAt: new Date() },
-];
+import examService from '@/src/services/exam.service';
+import paperService from '@/src/services/paper.service';
+import hierarchyService from '@/src/services/hierarchy.service';
+import questionService, { CreateQuestionRequest, AnswerType } from '@/src/services/question.service';
+import { toast } from 'sonner';
 
 const mockTopics = [
   { id: "1", name: "Kinematics", subject: "Physics" },
@@ -54,9 +48,13 @@ function QuestionEditorPageContent() {
   const questionId = searchParams.get('questionId');
   const initialType = searchParams.get('type') as QuestionType | null;
 
-  // Get initial exam date from paper if available
-  const initialPaper = initialPaperId ? mockPapers.find(p => p.id === initialPaperId) : null;
-  const initialExamDate = initialPaper?.date;
+  // API data states
+  const [exams, setExams] = useState<Exam[]>([]);
+  const [papers, setPapers] = useState<Paper[]>([]);
+  const [subjects, setSubjects] = useState<any[]>([]);
+  const [chapters, setChapters] = useState<any[]>([]);
+  const [topics, setTopics] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const [selectedType, setSelectedType] = useState<QuestionType | "">(initialType || "");
   const [question, setQuestion] = useState<Partial<Question>>({
@@ -75,25 +73,250 @@ function QuestionEditorPageContent() {
     ],
     positiveMarks: 4,
     negativeMarks: 1,
-    difficulty: "medium",
+    difficulty: 5,
     tags: [],
     examId: initialExamId,
     paperId: initialPaperId,
-    examDate: initialExamDate,
+    examDate: undefined,
     isPreviousYearQuestion: initialIsPreviousYear,
     status: "draft",
     assets: []
   });
 
+  // Fetch exams, subjects, papers, and question data on mount
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [examsData, subjectsData] = await Promise.all([
+          examService.getAllExams(),
+          hierarchyService.getAllSubjects()
+        ]);
+        setExams(examsData);
+        setSubjects(subjectsData);
+        
+        // If editing existing question, fetch it
+        if (questionId) {
+          const questionData = await questionService.getQuestionById(questionId);
+          
+          // Map backend response to frontend Question type
+          const mappedQuestion: Partial<Question> = {
+            id: questionData.id,
+            type: questionData.answer_type === 'SINGLE_CHOICE' ? 'single_choice_mcq' : 
+                  questionData.answer_type === 'MULTIPLE_CHOICE' ? 'multiple_choice_mcq' : 'integer_based',
+            content: {
+              question: {
+                raw: questionData.content.question.raw || '',
+                html: questionData.content.question.html || '',
+                plainText: questionData.content.question.plain_text || '',
+                assets: []
+              },
+              hints: questionData.content.hints ? {
+                raw: questionData.content.hints.raw || '',
+                html: questionData.content.hints.html || '',
+                plainText: questionData.content.hints.plain_text || '',
+                assets: []
+              } : undefined,
+              solution: questionData.answer.solution?.explanation ? {
+                raw: questionData.answer.solution.explanation.raw || '',
+                html: questionData.answer.solution.explanation.html || '',
+                plainText: questionData.answer.solution.explanation.plain_text || '',
+                assets: []
+              } : undefined
+            },
+            description: questionData.content.question.plain_text,
+            positiveMarks: questionData.positive_marks,
+            negativeMarks: questionData.negative_marks,
+            difficulty: questionData.difficulty,
+            tags: questionData.tags || [],
+            examId: questionData.exam_id,
+            paperId: questionData.paper_id,
+            subjectId: questionData.subject_id,
+            chapterId: questionData.chapter_id,
+            topicId: questionData.topic_id,
+            isPreviousYearQuestion: questionData.is_previous_year_question,
+            duration: questionData.duration_seconds,
+            status: questionData.status.toLowerCase() as any
+          };
+
+          // Helper to extract text from TipTap JSON
+          const extractTextFromTipTap = (raw: string): string => {
+            try {
+              const parsed = JSON.parse(raw);
+              if (parsed.type === 'doc' && parsed.content) {
+                let text = '';
+                parsed.content.forEach((node: any) => {
+                  if (node.type === 'paragraph' && node.content) {
+                    node.content.forEach((textNode: any) => {
+                      if (textNode.type === 'text' && textNode.text) {
+                        text += textNode.text;
+                      }
+                    });
+                  }
+                });
+                return text.trim();
+              }
+            } catch {
+              // Not JSON, return as-is
+            }
+            return raw;
+          };
+
+          // Map options for MCQ
+          if (questionData.answer.pool?.options) {
+            mappedQuestion.options = questionData.answer.pool.options.map((opt: any) => {
+              // Extract text from TipTap JSON if needed
+              const rawText = opt.content.raw ? extractTextFromTipTap(opt.content.raw) : '';
+              
+              return {
+                id: opt.id,
+                label: opt.label,
+                value: opt.content.plain_text || rawText,
+                content: {
+                  raw: rawText, // Use extracted text, not TipTap JSON
+                  html: opt.content.html || '',
+                  plainText: opt.content.plain_text || rawText,
+                  assets: []
+                },
+                isCorrect: questionData.answer_type === 'SINGLE_CHOICE' 
+                  ? opt.id === questionData.answer.key.correct_option_id
+                  : questionData.answer.key.correct_option_ids?.includes(opt.id) || false
+              };
+            });
+          }
+
+          // Map integer answer
+          if (questionData.answer_type === 'NUMERICAL' && questionData.answer.key.numerical_value !== undefined) {
+            mappedQuestion.integerAnswer = questionData.answer.key.numerical_value;
+          }
+
+          setQuestion(mappedQuestion);
+          setSelectedType(mappedQuestion.type || '');
+
+          // Fetch chapters and topics if subject/chapter are set
+          if (questionData.subject_id) {
+            const chaptersData = await hierarchyService.getChaptersBySubject(questionData.subject_id);
+            setChapters(chaptersData);
+            
+            if (questionData.chapter_id) {
+              const topicsData = await hierarchyService.getTopicsByChapter(questionData.chapter_id);
+              setTopics(topicsData);
+            }
+          }
+        }
+        
+        // If exam is selected, fetch papers
+        if (initialExamId || questionId) {
+          const examIdToUse = initialExamId || (questionId ? question.examId : '');
+          if (examIdToUse) {
+            const papersData = await paperService.getAllPapers(examIdToUse);
+            setPapers(papersData);
+            
+            // Set exam date from paper if paper is selected
+            const paperIdToUse = initialPaperId || (questionId ? question.paperId : '');
+            if (paperIdToUse) {
+              const selectedPaper = papersData.find(p => p.id === paperIdToUse);
+              if (selectedPaper) {
+                setQuestion(prev => ({ ...prev, examDate: selectedPaper.date }));
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch data:', error);
+        toast.error('Failed to load data');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [questionId]);
+
+  // Fetch papers when exam changes
+  useEffect(() => {
+    const fetchPapers = async () => {
+      if (question.examId) {
+        try {
+          const papersData = await paperService.getAllPapers(question.examId);
+          setPapers(papersData);
+        } catch (error) {
+          console.error('Failed to fetch papers:', error);
+          setPapers([]);
+        }
+      } else {
+        setPapers([]);
+      }
+    };
+    fetchPapers();
+  }, [question.examId]);
+
+  // Fetch chapters when subject changes
+  useEffect(() => {
+    const fetchChapters = async () => {
+      if (question.subjectId) {
+        try {
+          const chaptersData = await hierarchyService.getChaptersBySubject(question.subjectId);
+          setChapters(chaptersData);
+        } catch (error) {
+          console.error('Failed to fetch chapters:', error);
+          setChapters([]);
+        }
+      } else {
+        setChapters([]);
+      }
+    };
+    fetchChapters();
+  }, [question.subjectId]);
+
+  // Fetch topics when chapter changes
+  useEffect(() => {
+    const fetchTopics = async () => {
+      if (question.chapterId) {
+        try {
+          const topicsData = await hierarchyService.getTopicsByChapter(question.chapterId);
+          setTopics(topicsData);
+        } catch (error) {
+          console.error('Failed to fetch topics:', error);
+          setTopics([]);
+        }
+      } else {
+        setTopics([]);
+      }
+    };
+    fetchTopics();
+  }, [question.chapterId]);
+
   const [topicSearch, setTopicSearch] = useState("");
   const [currentTag, setCurrentTag] = useState("");
+
+  // Helper function to convert text with equations to proper HTML
+  const convertTextToHTML = (text: string): string => {
+    if (!text) return '';
+    
+    let html = text;
+    
+    // Convert block LaTeX equations ($$...$$)
+    html = html.replace(/\$\$(.*?)\$\$/g, (match, latex) => {
+      return `<div class="equation-block" data-latex="${latex.trim()}">${latex.trim()}</div>`;
+    });
+    
+    // Convert inline LaTeX equations ($...$)
+    html = html.replace(/\$(.*?)\$/g, (match, latex) => {
+      return `<span class="equation-inline" data-latex="${latex.trim()}">${latex.trim()}</span>`;
+    });
+    
+    // Wrap in paragraph if not already wrapped
+    if (!html.startsWith('<div') && !html.startsWith('<p>')) {
+      html = `<p>${html}</p>`;
+    }
+    
+    return html;
+  };
 
   const filteredTopics = mockTopics.filter(topic =>
     topic.name.toLowerCase().includes(topicSearch.toLowerCase()) ||
     topic.subject.toLowerCase().includes(topicSearch.toLowerCase())
   );
-
-  const filteredPapers = mockPapers.filter(paper => paper.examId === question.examId);
 
   const handleTypeSelection = (type: QuestionType) => {
     setSelectedType(type);
@@ -111,18 +334,180 @@ function QuestionEditorPageContent() {
     setQuestion(prev => ({ ...prev, tags: prev.tags?.filter(tag => tag !== tagToRemove) || [] }));
   };
 
-  const handleSave = () => {
-    if (!question.content?.question?.raw) {
-      alert("Please enter the question content");
+  const handleSave = async () => {
+    // Validation
+    if (!question.content?.question?.raw || !question.content?.question?.html) {
+      toast.error("Please enter the question content");
       return;
     }
-    console.log("Saving question:", question);
-    alert("Question saved successfully!");
-    router.push('/question-onboarding');
+    if (!question.examId) {
+      toast.error("Please select an exam");
+      return;
+    }
+    if (!question.subjectId) {
+      toast.error("Please select a subject");
+      return;
+    }
+    if (!question.chapterId) {
+      toast.error("Please select a chapter");
+      return;
+    }
+    if (!question.topicId) {
+      toast.error("Please select a topic");
+      return;
+    }
+    if (question.isPreviousYearQuestion && !question.paperId) {
+      toast.error("Please select a paper for previous year question");
+      return;
+    }
+    if (question.isPreviousYearQuestion && (!question.positiveMarks || question.positiveMarks <= 0)) {
+      toast.error("Please enter positive marks for previous year question");
+      return;
+    }
+    if (question.isPreviousYearQuestion && (question.negativeMarks === undefined || question.negativeMarks < 0)) {
+      toast.error("Please enter negative marks for previous year question (0 or greater)");
+      return;
+    }
+
+    // Validate options for MCQ
+    if ((question.type === 'single_choice_mcq' || question.type === 'multiple_choice_mcq') && question.options) {
+      const hasCorrect = question.options.some(opt => opt.isCorrect);
+      if (!hasCorrect) {
+        toast.error("Please mark at least one correct answer");
+        return;
+      }
+      const allOptionsFilled = question.options.every(opt => opt.value && opt.value.trim());
+      if (!allOptionsFilled) {
+        toast.error("Please fill all option values");
+        return;
+      }
+    }
+
+    try {
+      // Map answer type
+      let answerType: AnswerType = 'SINGLE_CHOICE';
+      if (question.type === 'multiple_choice_mcq') {
+        answerType = 'MULTIPLE_CHOICE';
+      } else if (question.type === 'integer_based') {
+        answerType = 'NUMERICAL';
+      }
+
+      // Build answer object
+      const answer: any = {
+        pool: null,
+        key: {},
+        solution: undefined
+      };
+
+      // For MCQ questions
+      if (question.type === 'single_choice_mcq' || question.type === 'multiple_choice_mcq') {
+        answer.pool = {
+          options: question.options?.map((opt, index) => {
+            // Use existing content if available (from RichContentEditor), otherwise create from value
+            const content = opt.content ? {
+              raw: opt.content.raw || opt.value,
+              html: opt.content.html || convertTextToHTML(opt.value),
+              plain_text: opt.content.plainText || opt.value
+            } : {
+              raw: opt.value,
+              html: convertTextToHTML(opt.value),
+              plain_text: opt.value
+            };
+            
+            return {
+              id: `opt${index + 1}`,
+              label: opt.label,
+              content
+            };
+          }) || []
+        };
+
+        if (question.type === 'single_choice_mcq') {
+          const correctOptionIndex = question.options?.findIndex(opt => opt.isCorrect);
+          answer.key.correct_option_id = correctOptionIndex !== undefined && correctOptionIndex >= 0 ? `opt${correctOptionIndex + 1}` : undefined;
+        } else {
+          answer.key.correct_option_ids = question.options?.map((opt, index) => opt.isCorrect ? `opt${index + 1}` : null).filter(Boolean) || [];
+        }
+      }
+
+      // For integer/numerical questions
+      if (question.type === 'integer_based' && question.integerAnswer !== undefined) {
+        answer.key.numerical_value = question.integerAnswer;
+      }
+
+      // Add solution if provided
+      if (question.content?.solution?.raw && question.content?.solution?.html) {
+        answer.solution = {
+          explanation: {
+            raw: question.content.solution.raw,
+            html: question.content.solution.html,
+            plain_text: question.content.solution.plainText || ''
+          }
+        };
+      }
+
+      // Build create request
+      const createRequest: CreateQuestionRequest = {
+        answer_type: answerType,
+        difficulty: question.difficulty || 5,
+        subject_id: question.subjectId!,
+        chapter_id: question.chapterId,
+        topic_id: question.topicId,
+        content: {
+          question: {
+            raw: question.content.question.raw,
+            html: question.content.question.html,
+            plain_text: question.content.question.plainText || ''
+          },
+          hints: question.content?.hints?.raw && question.content?.hints?.html ? {
+            raw: question.content.hints.raw,
+            html: question.content.hints.html,
+            plain_text: question.content.hints.plainText || ''
+          } : undefined
+        },
+        answer,
+        positive_marks: question.positiveMarks ?? 0,
+        negative_marks: question.negativeMarks ?? 0,
+        duration_seconds: question.duration,
+        tags: question.tags && question.tags.length > 0 ? question.tags : undefined,
+        exam_id: question.examId,
+        paper_id: question.paperId || undefined,
+        is_previous_year_question: question.isPreviousYearQuestion || false
+      };
+
+      console.log(questionId ? 'Updating question:' : 'Creating question:', createRequest);
+      console.log('Options being sent:', answer.pool?.options);
+      
+      if (questionId) {
+        // Update existing question
+        await questionService.updateQuestion(questionId, createRequest as any);
+        toast.success("Question updated successfully!");
+      } else {
+        // Create new question
+        await questionService.createQuestion(createRequest);
+        toast.success("Question created successfully!");
+      }
+      
+      router.push('/question-onboarding');
+    } catch (error: any) {
+      console.error('Failed to create question:', error);
+      toast.error(error.message || 'Failed to create question');
+    }
   };
 
-  const getExamName = () => mockExams.find(e => e.id === question.examId)?.name || "Unknown Exam";
-  const getPaperName = () => mockPapers.find(p => p.id === question.paperId)?.name || "No Paper";
+  const getExamName = () => exams.find(e => e.id === question.examId)?.name || "Unknown Exam";
+  const getPaperName = () => papers.find(p => p.id === question.paperId)?.name || "No Paper";
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Type selection screen
   if (!selectedType) {
@@ -227,7 +612,11 @@ function QuestionEditorPageContent() {
                 <Select value={question.examId} onValueChange={(value) => setQuestion(prev => ({ ...prev, examId: value, paperId: "" }))}>
                   <SelectTrigger id="examSelect" className="mt-1"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {mockExams.map((exam) => (<SelectItem key={exam.id} value={exam.id}>{exam.name}</SelectItem>))}
+                    {exams.length === 0 ? (
+                      <div className="p-2 text-center text-sm text-gray-500">No exams available</div>
+                    ) : (
+                      exams.map((exam) => (<SelectItem key={exam.id} value={exam.id}>{exam.name}</SelectItem>))
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -246,7 +635,7 @@ function QuestionEditorPageContent() {
                     📄 Select Paper for Previous Year Question *
                   </Label>
                   <Select value={question.paperId} onValueChange={(value) => {
-                    const selectedPaper = mockPapers.find(p => p.id === value);
+                    const selectedPaper = papers.find(p => p.id === value);
                     setQuestion(prev => ({ 
                       ...prev, 
                       paperId: value,
@@ -257,12 +646,12 @@ function QuestionEditorPageContent() {
                       <SelectValue placeholder="👉 Choose a paper" className="text-gray-700" />
                     </SelectTrigger>
                     <SelectContent>
-                      {filteredPapers.length === 0 ? (
+                      {papers.length === 0 ? (
                         <div className="p-4 text-sm text-gray-500 text-center">
                           No papers available for this exam
                         </div>
                       ) : (
-                        filteredPapers.map((paper) => (
+                        papers.map((paper) => (
                           <SelectItem key={paper.id} value={paper.id} className="font-medium">
                             {paper.name}
                           </SelectItem>
@@ -326,8 +715,9 @@ function QuestionEditorPageContent() {
                       </div>
                       <div className="flex-1">
                         <RichContentEditor
-                          value={option.content || { raw: option.value || "", html: option.value || "", plainText: option.value || "", assets: [] }}
+                          value={option.content || { raw: "", html: "", plainText: "", assets: [] }}
                           onChange={(newContent) => {
+                            console.log('Option content changed:', newContent);
                             const newOptions = [...(question.options || [])];
                             newOptions[index] = { ...option, content: newContent, value: newContent.plainText };
                             setQuestion(prev => ({ ...prev, options: newOptions }));
@@ -381,48 +771,175 @@ function QuestionEditorPageContent() {
               <RichContentEditor label="Solution (Optional)" value={question.content?.solution || { raw: "", html: "", plainText: "", assets: [] }} onChange={(content) => setQuestion(prev => ({ ...prev, content: { ...prev.content, solution: content } }))} placeholder="Provide detailed solution..." allowImages={true} allowEquations={true} />
             </div>
 
-            {/* Topic */}
+            {/* Subject, Chapter, Topic Hierarchy */}
+            <div className="p-4 border rounded-lg bg-gray-50 space-y-4">
+              <h3 className="font-semibold text-sm text-gray-700">Subject Hierarchy *</h3>
+              
+              <div>
+                <Label htmlFor="subjectSelect">Subject *</Label>
+                <Select 
+                  value={question.subjectId} 
+                  onValueChange={(value) => setQuestion(prev => ({ 
+                    ...prev, 
+                    subjectId: value, 
+                    chapterId: "", 
+                    topicId: "" 
+                  }))}
+                >
+                  <SelectTrigger id="subjectSelect" className="mt-1">
+                    <SelectValue placeholder="Select subject" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {subjects.length === 0 ? (
+                      <div className="p-2 text-center text-sm text-gray-500">No subjects available</div>
+                    ) : (
+                      subjects.map((subject) => (
+                        <SelectItem key={subject.id} value={subject.id}>
+                          {subject.name}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="chapterSelect">Chapter *</Label>
+                <Select 
+                  value={question.chapterId} 
+                  onValueChange={(value) => setQuestion(prev => ({ 
+                    ...prev, 
+                    chapterId: value, 
+                    topicId: "" 
+                  }))}
+                  disabled={!question.subjectId}
+                >
+                  <SelectTrigger id="chapterSelect" className="mt-1">
+                    <SelectValue placeholder="Select chapter" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {chapters.length === 0 ? (
+                      <div className="p-2 text-center text-sm text-gray-500">
+                        {question.subjectId ? 'No chapters available' : 'Select a subject first'}
+                      </div>
+                    ) : (
+                      chapters.map((chapter) => (
+                        <SelectItem key={chapter.id} value={chapter.id}>
+                          {chapter.name}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="topicSelect">Topic *</Label>
+                <Select 
+                  value={question.topicId} 
+                  onValueChange={(value) => setQuestion(prev => ({ ...prev, topicId: value }))}
+                  disabled={!question.chapterId}
+                >
+                  <SelectTrigger id="topicSelect" className="mt-1">
+                    <SelectValue placeholder="Select topic" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {topics.length === 0 ? (
+                      <div className="p-2 text-center text-sm text-gray-500">
+                        {question.chapterId ? 'No topics available' : 'Select a chapter first'}
+                      </div>
+                    ) : (
+                      topics.map((topic) => (
+                        <SelectItem key={topic.id} value={topic.id}>
+                          {topic.name}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Scoring and Duration */}
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="positiveMarks">
+                  Positive Marks {question.isPreviousYearQuestion ? '*' : '(Optional)'}
+                </Label>
+                <Input 
+                  id="positiveMarks" 
+                  type="number" 
+                  value={question.positiveMarks || ""} 
+                  onChange={(e) => setQuestion(prev => ({ ...prev, positiveMarks: e.target.value ? parseFloat(e.target.value) : undefined }))} 
+                  placeholder="4" 
+                  className="mt-1" 
+                  min="0" 
+                  step="0.25" 
+                />
+              </div>
+              <div>
+                <Label htmlFor="negativeMarks">
+                  Negative Marks {question.isPreviousYearQuestion ? '*' : '(Optional)'}
+                </Label>
+                <Input 
+                  id="negativeMarks" 
+                  type="number" 
+                  value={question.negativeMarks || ""} 
+                  onChange={(e) => setQuestion(prev => ({ ...prev, negativeMarks: e.target.value ? parseFloat(e.target.value) : undefined }))} 
+                  placeholder="1" 
+                  className="mt-1" 
+                  min="0" 
+                  step="0.25" 
+                />
+              </div>
+              <div>
+                <Label htmlFor="duration">Duration (seconds)</Label>
+                <Input 
+                  id="duration" 
+                  type="number" 
+                  value={question.duration || ""} 
+                  onChange={(e) => setQuestion(prev => ({ ...prev, duration: e.target.value ? parseInt(e.target.value) : undefined }))} 
+                  placeholder="120" 
+                  className="mt-1" 
+                  min="0" 
+                  step="10" 
+                />
+                <p className="text-xs text-gray-500 mt-1">Optional</p>
+              </div>
+            </div>
+
+            {/* Difficulty - Integer 1-10 */}
             <div>
-              <Label htmlFor="topicSearch">Topic</Label>
-              <Input id="topicSearch" value={topicSearch} onChange={(e) => setTopicSearch(e.target.value)} placeholder="Search topics..." className="mt-1" />
-              {topicSearch && (
-                <div className="max-h-32 overflow-y-auto border rounded-lg mt-2">
-                  {filteredTopics.map((topic) => (
-                    <div key={topic.id} className="p-2 hover:bg-gray-50 cursor-pointer border-b last:border-b-0" onClick={() => {
-                      setQuestion(prev => ({ ...prev, topicId: topic.id }));
-                      setTopicSearch(`${topic.name} (${topic.subject})`);
-                    }}>
-                      <div className="font-medium">{topic.name}</div>
-                      <div className="text-sm text-gray-500">{topic.subject}</div>
-                    </div>
-                  ))}
+              <Label htmlFor="difficulty">Difficulty Level * (1-10)</Label>
+              <div className="flex items-center gap-4 mt-2">
+                <Input 
+                  id="difficulty" 
+                  type="range" 
+                  min="1" 
+                  max="10" 
+                  value={question.difficulty || 5} 
+                  onChange={(e) => setQuestion(prev => ({ ...prev, difficulty: parseInt(e.target.value) }))}
+                  className="flex-1"
+                />
+                <div className="flex items-center gap-2">
+                  <Input 
+                    type="number" 
+                    min="1" 
+                    max="10" 
+                    value={question.difficulty || 5} 
+                    onChange={(e) => setQuestion(prev => ({ ...prev, difficulty: parseInt(e.target.value) || 5 }))}
+                    className="w-16 text-center"
+                  />
+                  <span className="text-sm font-medium text-gray-600">
+                    {(question.difficulty || 5) <= 3 ? '🟢 Easy' : 
+                     (question.difficulty || 5) <= 7 ? '🟡 Medium' : 
+                     '🔴 Hard'}
+                  </span>
                 </div>
-              )}
-            </div>
-
-            {/* Scoring */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="positiveMarks">Positive Marks *</Label>
-                <Input id="positiveMarks" type="number" value={question.positiveMarks} onChange={(e) => setQuestion(prev => ({ ...prev, positiveMarks: parseFloat(e.target.value) || 0 }))} placeholder="4" className="mt-1" min="0" step="0.25" />
               </div>
-              <div>
-                <Label htmlFor="negativeMarks">Negative Marks *</Label>
-                <Input id="negativeMarks" type="number" value={question.negativeMarks} onChange={(e) => setQuestion(prev => ({ ...prev, negativeMarks: parseFloat(e.target.value) || 0 }))} placeholder="1" className="mt-1" min="0" step="0.25" />
-              </div>
-            </div>
-
-            {/* Difficulty */}
-            <div>
-              <Label htmlFor="difficulty">Difficulty Level *</Label>
-              <Select value={question.difficulty} onValueChange={(value: "easy" | "medium" | "hard") => setQuestion(prev => ({ ...prev, difficulty: value }))}>
-                <SelectTrigger id="difficulty" className="mt-1"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="easy">Easy</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="hard">Hard</SelectItem>
-                </SelectContent>
-              </Select>
+              <p className="text-xs text-gray-500 mt-1">
+                1-3: Easy | 4-7: Medium | 8-10: Hard
+              </p>
             </div>
 
             {/* Tags */}
@@ -436,7 +953,17 @@ function QuestionEditorPageContent() {
                 <div className="flex flex-wrap gap-2 mt-2">
                   {question.tags.map((tag) => (
                     <Badge key={tag} variant="secondary" className="flex items-center gap-1">
-                      {tag}<X className="w-3 h-3 cursor-pointer" onClick={() => removeTag(tag)} />
+                      {tag}
+                      <button 
+                        type="button" 
+                        onClick={(e) => {
+                          e.preventDefault();
+                          removeTag(tag);
+                        }} 
+                        className="ml-1 hover:bg-gray-300 rounded-full p-0.5"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
                     </Badge>
                   ))}
                 </div>

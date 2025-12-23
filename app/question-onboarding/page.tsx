@@ -9,6 +9,7 @@ import { Plus, Search, Edit, Trash2, FileQuestion, BookOpen, CheckCircle2, ListT
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { RichContentRenderer } from "@/src/components/ui/rich-content-renderer";
 import {
   Table,
   TableBody,
@@ -34,197 +35,198 @@ import {
 import { Question, Exam, Paper } from "@/src/types/exam";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
-
-// Mock data - replace with actual API calls
-const mockExams: Exam[] = [
-  {
-    id: "1",
-    name: "JEE Main 2024",
-    description: "Joint Entrance Examination Main",
-    countries: ["India"],
-    metadata: [],
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: "2",
-    name: "NEET 2024",
-    description: "National Eligibility cum Entrance Test",
-    countries: ["India"],
-    metadata: [],
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-];
-
-const mockPapers: Paper[] = [
-  {
-    id: "1",
-    name: "JEE Main 2024 - Paper 1",
-    examId: "1",
-    date: new Date("2024-04-15"),
-    totalQuestions: 90,
-    totalMarks: 300,
-    duration: 10800,
-    sections: [],
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: "2",
-    name: "JEE Main 2024 - Paper 2",
-    examId: "1",
-    date: new Date("2024-04-16"),
-    totalQuestions: 82,
-    totalMarks: 390,
-    duration: 10800,
-    sections: [],
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: "3",
-    name: "NEET 2024 - Paper 1",
-    examId: "2",
-    date: new Date("2024-05-05"),
-    totalQuestions: 180,
-    totalMarks: 720,
-    duration: 10800,
-    sections: [],
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-];
-
-const mockSubjects = [
-  { id: "1", name: "Physics", examId: "1" },
-  { id: "2", name: "Chemistry", examId: "1" },
-  { id: "3", name: "Mathematics", examId: "1" },
-  { id: "4", name: "Biology", examId: "2" },
-  { id: "5", name: "Physics", examId: "2" },
-  { id: "6", name: "Chemistry", examId: "2" },
-];
-
-const mockTopics = [
-  { id: "1", name: "Mechanics", subjectId: "1", chapterId: "1" },
-  { id: "2", name: "Thermodynamics", subjectId: "1", chapterId: "2" },
-  { id: "3", name: "Organic Chemistry", subjectId: "2", chapterId: "3" },
-  { id: "4", name: "Inorganic Chemistry", subjectId: "2", chapterId: "4" },
-  { id: "5", name: "Algebra", subjectId: "3", chapterId: "5" },
-  { id: "6", name: "Calculus", subjectId: "3", chapterId: "6" },
-  { id: "7", name: "Cell Biology", subjectId: "4", chapterId: "7" },
-  { id: "8", name: "Genetics", subjectId: "4", chapterId: "8" },
-];
-
-const mockChapters = [
-  { id: "1", name: "Kinematics", subjectId: "1" },
-  { id: "2", name: "Heat Transfer", subjectId: "1" },
-  { id: "3", name: "Hydrocarbons", subjectId: "2" },
-  { id: "4", name: "Coordination Compounds", subjectId: "2" },
-  { id: "5", name: "Matrices", subjectId: "3" },
-  { id: "6", name: "Derivatives", subjectId: "3" },
-  { id: "7", name: "Cell Structure", subjectId: "4" },
-  { id: "8", name: "DNA & RNA", subjectId: "4" },
-];
-
-const mockQuestions: Question[] = [
-  {
-    id: "1",
-    type: "single_choice_mcq",
-    description: "What is the capital of France?",
-    content: {
-      question: { raw: "What is the capital of France?", html: "<p>What is the capital of France?</p>", plainText: "What is the capital of France?", assets: [] }
-    },
-    options: [
-      { id: "1", label: "A", value: "Paris", isCorrect: true },
-      { id: "2", label: "B", value: "London", isCorrect: false },
-      { id: "3", label: "C", value: "Berlin", isCorrect: false },
-      { id: "4", label: "D", value: "Madrid", isCorrect: false },
-    ],
-    correctAnswers: ["1"],
-    positiveMarks: 4,
-    negativeMarks: 1,
-    difficulty: "easy",
-    tags: ["geography"],
-    subjectId: "1",
-    topicId: "1",
-    chapterId: "1",
-    examId: "1",
-    paperId: "1",
-    examDate: new Date("2024-04-15"),
-    isPreviousYearQuestion: true,
-    status: "published",
-    assets: [],
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-];
+import examService from '@/src/services/exam.service';
+import paperService from '@/src/services/paper.service';
+import hierarchyService from '@/src/services/hierarchy.service';
+import questionService, { QuestionResponse, QuestionStatus, QuestionStatistics } from '@/src/services/question.service';
+import { toast } from 'sonner';
 
 export default function QuestionOnboardingPage() {
   const router = useRouter();
-  const [questions, setQuestions] = useState<Question[]>(mockQuestions);
+  
+  // API data states
+  const [questions, setQuestions] = useState<QuestionResponse[]>([]);
+  const [exams, setExams] = useState<Exam[]>([]);
+  const [papers, setPapers] = useState<Paper[]>([]);
+  const [subjects, setSubjects] = useState<any[]>([]);
+  const [chapters, setChapters] = useState<any[]>([]);
+  const [topics, setTopics] = useState<any[]>([]);
+  const [dialogPapers, setDialogPapers] = useState<Paper[]>([]); // Papers for create dialog
+  const [loading, setLoading] = useState(true);
+  const [statistics, setStatistics] = useState<QuestionStatistics>({
+    total_questions: 0,
+    draft_questions: 0,
+    under_review_questions: 0,
+    published_questions: 0,
+    pyq_questions: 0,
+  });
+  
+  // Filter states
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedExamId, setSelectedExamId] = useState<string>("all");
   const [selectedPaperId, setSelectedPaperId] = useState<string>("all");
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>("all");
   const [selectedTopicId, setSelectedTopicId] = useState<string>("all");
   const [selectedChapterId, setSelectedChapterId] = useState<string>("all");
+  
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(0); // API uses 0-based indexing
+  const [pageSize] = useState(20);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
+  
+  // Dialog state
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const questionsPerPage = 10;
   const [newQuestionData, setNewQuestionData] = useState({
-    examId: mockExams[0]?.id || "", // Default to first exam
+    examId: "",
     paperId: "",
     isPreviousYearQuestion: false,
   });
 
-  const filteredPapers = selectedExamId && selectedExamId !== "all" 
-    ? mockPapers.filter(paper => paper.examId === selectedExamId)
-    : mockPapers;
+  // Fetch papers for dialog when exam changes
+  useEffect(() => {
+    const fetchDialogPapers = async () => {
+      if (newQuestionData.examId) {
+        try {
+          const papersData = await paperService.getAllPapers(newQuestionData.examId);
+          setDialogPapers(papersData);
+        } catch (error) {
+          console.error('Failed to fetch papers for dialog:', error);
+          setDialogPapers([]);
+        }
+      } else {
+        setDialogPapers([]);
+      }
+    };
+    fetchDialogPapers();
+  }, [newQuestionData.examId]);
 
-  const filteredSubjects = selectedExamId && selectedExamId !== "all" 
-    ? mockSubjects.filter(subject => subject.examId === selectedExamId)
-    : mockSubjects;
+  // Fetch initial data
+  useEffect(() => {
+    const fetchInitialData = async () => {
+      try {
+        const [examsData, subjectsData] = await Promise.all([
+          examService.getAllExams(),
+          hierarchyService.getAllSubjects()
+        ]);
+        setExams(examsData);
+        setSubjects(subjectsData);
+        
+        if (examsData.length > 0) {
+          setNewQuestionData(prev => ({ ...prev, examId: examsData[0].id }));
+        }
+      } catch (error) {
+        console.error('Failed to fetch initial data:', error);
+        toast.error('Failed to load data');
+      }
+    };
+    fetchInitialData();
+  }, []);
 
-  const filteredChapters = selectedSubjectId && selectedSubjectId !== "all" 
-    ? mockChapters.filter(chapter => chapter.subjectId === selectedSubjectId)
-    : mockChapters;
+  // Fetch questions when filters change
+  useEffect(() => {
+    fetchQuestions();
+  }, [currentPage, searchTerm, selectedExamId, selectedPaperId, selectedSubjectId, selectedChapterId, selectedTopicId]);
 
-  const filteredTopics = selectedChapterId && selectedChapterId !== "all" 
-    ? mockTopics.filter(topic => topic.chapterId === selectedChapterId)
-    : mockTopics;
+  // Fetch papers when exam changes
+  useEffect(() => {
+    if (selectedExamId && selectedExamId !== 'all') {
+      fetchPapers(selectedExamId);
+    } else {
+      setPapers([]);
+    }
+  }, [selectedExamId]);
 
-  const filteredQuestions = questions.filter(question => {
-    const matchesSearch = 
-      question.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      question.tags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesExam = !selectedExamId || selectedExamId === "all" || question.examId === selectedExamId;
-    const matchesPaper = !selectedPaperId || selectedPaperId === "all" || question.paperId === selectedPaperId;
-    const matchesSubject = !selectedSubjectId || selectedSubjectId === "all" || question.subjectId === selectedSubjectId;
-    const matchesTopic = !selectedTopicId || selectedTopicId === "all" || question.topicId === selectedTopicId;
-    const matchesChapter = !selectedChapterId || selectedChapterId === "all" || question.chapterId === selectedChapterId;
-    return matchesSearch && matchesExam && matchesPaper && matchesSubject && matchesTopic && matchesChapter;
-  });
+  // Fetch chapters when subject changes
+  useEffect(() => {
+    if (selectedSubjectId && selectedSubjectId !== 'all') {
+      fetchChapters(selectedSubjectId);
+    } else {
+      setChapters([]);
+    }
+  }, [selectedSubjectId]);
 
-  // Pagination logic
-  const totalPages = Math.ceil(filteredQuestions.length / questionsPerPage);
-  const startIndex = (currentPage - 1) * questionsPerPage;
-  const endIndex = startIndex + questionsPerPage;
-  const paginatedQuestions = filteredQuestions.slice(startIndex, endIndex);
+  // Fetch topics when chapter changes
+  useEffect(() => {
+    if (selectedChapterId && selectedChapterId !== 'all') {
+      fetchTopics(selectedChapterId);
+    } else {
+      setTopics([]);
+    }
+  }, [selectedChapterId]);
 
-  // Statistics
+  const fetchQuestions = async () => {
+    try {
+      setLoading(true);
+      const response = await questionService.searchQuestions({
+        page: currentPage,
+        size: pageSize,
+        sort_by: 'createdOn',
+        sort_direction: 'DESC',
+        statuses: ['DRAFT', 'UNDER_REVIEW'],
+        exam_id: selectedExamId !== 'all' ? selectedExamId : undefined,
+        paper_id: selectedPaperId !== 'all' ? selectedPaperId : undefined,
+        subject_id: selectedSubjectId !== 'all' ? selectedSubjectId : undefined,
+        chapter_id: selectedChapterId !== 'all' ? selectedChapterId : undefined,
+        topic_id: selectedTopicId !== 'all' ? selectedTopicId : undefined,
+        search_text: searchTerm || undefined,
+      });
+      
+      setQuestions(response.questions);
+      setStatistics(response.statistics);
+      setTotalPages(response.total_pages);
+      setTotalElements(response.total_elements);
+    } catch (error) {
+      console.error('Failed to fetch questions:', error);
+      toast.error('Failed to load questions');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchPapers = async (examId: string) => {
+    try {
+      const papersData = await paperService.getAllPapers(examId);
+      setPapers(papersData);
+    } catch (error) {
+      console.error('Failed to fetch papers:', error);
+    }
+  };
+
+  const fetchChapters = async (subjectId: string) => {
+    try {
+      const chaptersData = await hierarchyService.getChaptersBySubject(subjectId);
+      setChapters(chaptersData);
+    } catch (error) {
+      console.error('Failed to fetch chapters:', error);
+    }
+  };
+
+  const fetchTopics = async (chapterId: string) => {
+    try {
+      const topicsData = await hierarchyService.getTopicsByChapter(chapterId);
+      setTopics(topicsData);
+    } catch (error) {
+      console.error('Failed to fetch topics:', error);
+    }
+  };
+
+  const filteredPapers = papers;
+  const filteredSubjects = subjects;
+  const filteredChapters = chapters;
+  const filteredTopics = topics;
+
+  // Statistics from API
   const stats = {
-    total: questions.length,
-    filtered: filteredQuestions.length,
-    pyq: questions.filter(q => q.isPreviousYearQuestion).length,
-    mcq: questions.filter(q => q.type.includes('mcq')).length,
-    integer: questions.filter(q => q.type === 'integer_based').length,
-    published: questions.filter(q => q.status === 'published').length,
+    total: statistics.total_questions,
+    draft: statistics.draft_questions,
+    underReview: statistics.under_review_questions,
+    pyq: statistics.pyq_questions,
   };
 
   // Reset to first page when filters change
   useEffect(() => {
-    setCurrentPage(1);
+    setCurrentPage(0);
   }, [searchTerm, selectedExamId, selectedPaperId, selectedSubjectId, selectedTopicId, selectedChapterId]);
 
   const handleCreateQuestion = () => {
@@ -250,34 +252,52 @@ export default function QuestionOnboardingPage() {
     setIsCreateDialogOpen(false);
   };
 
-  const handleDeleteQuestion = (questionId: string) => {
+  const handleDeleteQuestion = async (questionId: string) => {
     if (confirm("Are you sure you want to delete this question?")) {
-      setQuestions(questions.filter(q => q.id !== questionId));
+      try {
+        await questionService.deleteQuestion(questionId);
+        toast.success('Question deleted successfully');
+        fetchQuestions();
+      } catch (error) {
+        console.error('Failed to delete question:', error);
+        toast.error('Failed to delete question');
+      }
     }
   };
 
   const getExamName = (examId?: string) => {
-    return mockExams.find(e => e.id === examId)?.name || "N/A";
+    return exams.find(e => e.id === examId)?.name || "Unknown Exam";
   };
 
   const getPaperName = (paperId?: string) => {
-    return mockPapers.find(p => p.id === paperId)?.name || "N/A";
+    return papers.find(p => p.id === paperId)?.name || "No Paper";
   };
 
   const getSubjectName = (subjectId?: string) => {
-    return mockSubjects.find(s => s.id === subjectId)?.name || "N/A";
+    return subjects.find(s => s.id === subjectId)?.name || "N/A";
   };
 
   const getChapterName = (chapterId?: string) => {
-    return mockChapters.find(c => c.id === chapterId)?.name || "N/A";
+    return chapters.find(c => c.id === chapterId)?.name || "N/A";
   };
 
   const getTopicName = (topicId?: string) => {
-    return mockTopics.find(t => t.id === topicId)?.name || "N/A";
+    return topics.find(t => t.id === topicId)?.name || "N/A";
   };
 
   const formatDate = (date: Date) => {
     return date.toISOString().split('T')[0];
+  };
+
+  const handleStatusChange = async (questionId: string, newStatus: QuestionStatus) => {
+    try {
+      await questionService.updateQuestion(questionId, { status: newStatus } as any);
+      toast.success('Status updated successfully');
+      fetchQuestions();
+    } catch (error) {
+      console.error('Failed to update status:', error);
+      toast.error('Failed to update status');
+    }
   };
 
   return (
@@ -288,8 +308,8 @@ export default function QuestionOnboardingPage() {
           {/* Header Section */}
           <div className="flex items-center justify-between">
             <div>
-              <PageTitle>Question Bank</PageTitle>
-              <p className="text-gray-600 mt-1">Manage and organize your question repository</p>
+              <PageTitle>Draft + Under Review Questions</PageTitle>
+              <p className="text-gray-600 mt-1">Manage questions pending review and publication</p>
             </div>
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
               <DialogTrigger asChild>
@@ -319,11 +339,17 @@ export default function QuestionOnboardingPage() {
                         <SelectValue placeholder="Choose an exam" />
                       </SelectTrigger>
                       <SelectContent>
-                        {mockExams.map((exam) => (
-                          <SelectItem key={exam.id} value={exam.id}>
-                            {exam.name}
-                          </SelectItem>
-                        ))}
+                        {exams.length === 0 ? (
+                          <div className="p-2 text-center text-sm text-gray-500">
+                            No exams available
+                          </div>
+                        ) : (
+                          exams.map((exam) => (
+                            <SelectItem key={exam.id} value={exam.id}>
+                              {exam.name}
+                            </SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
@@ -363,13 +389,17 @@ export default function QuestionOnboardingPage() {
                           <SelectValue placeholder="Choose a paper" />
                         </SelectTrigger>
                         <SelectContent>
-                          {mockPapers
-                            .filter(paper => paper.examId === newQuestionData.examId)
-                            .map((paper) => (
+                          {dialogPapers.length === 0 ? (
+                            <div className="p-2 text-center text-sm text-gray-500">
+                              No papers available for this exam
+                            </div>
+                          ) : (
+                            dialogPapers.map((paper) => (
                               <SelectItem key={paper.id} value={paper.id}>
                                 {paper.name}
                               </SelectItem>
-                            ))}
+                            ))
+                          )}
                         </SelectContent>
                       </Select>
                       <p className="text-xs text-gray-500 mt-1">
@@ -400,61 +430,47 @@ export default function QuestionOnboardingPage() {
             <Card className="p-5 bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 hover:shadow-lg transition-shadow">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm font-medium text-blue-700 mb-1">Total Questions</p>
+                  <p className="text-sm font-medium text-blue-700 mb-1">Total</p>
                   <p className="text-3xl font-bold text-blue-900">{stats.total}</p>
-                  {stats.filtered !== stats.total && (
-                    <p className="text-xs text-blue-600 mt-1">
-                      {stats.filtered} filtered
-                    </p>
-                  )}
                 </div>
                 <div className="p-3 bg-blue-200 rounded-lg">
-                  <BookOpen className="w-6 h-6 text-blue-700" />
+                  <FileQuestion className="w-6 h-6 text-blue-700" />
+                </div>
+              </div>
+            </Card>
+
+            {/* Draft Questions */}
+            <Card className="p-5 bg-gradient-to-br from-gray-50 to-gray-100 border-gray-200 hover:shadow-lg transition-shadow">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-700 mb-1">Draft</p>
+                  <p className="text-3xl font-bold text-gray-900">{stats.draft}</p>
+                </div>
+                <div className="p-3 bg-gray-200 rounded-lg">
+                  <ListTodo className="w-6 h-6 text-gray-700" />
+                </div>
+              </div>
+            </Card>
+
+            {/* Under Review Questions */}
+            <Card className="p-5 bg-gradient-to-br from-yellow-50 to-yellow-100 border-yellow-200 hover:shadow-lg transition-shadow">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm font-medium text-yellow-700 mb-1">Under Review</p>
+                  <p className="text-3xl font-bold text-yellow-900">{stats.underReview}</p>
+                </div>
+                <div className="p-3 bg-yellow-200 rounded-lg">
+                  <BookOpen className="w-6 h-6 text-yellow-700" />
                 </div>
               </div>
             </Card>
 
             {/* Previous Year Questions */}
-            <Card className="p-5 bg-gradient-to-br from-yellow-50 to-yellow-100 border-yellow-200 hover:shadow-lg transition-shadow">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm font-medium text-yellow-700 mb-1">PYQ</p>
-                  <p className="text-3xl font-bold text-yellow-900">{stats.pyq}</p>
-                  <p className="text-xs text-yellow-600 mt-1">
-                    {stats.total > 0 ? Math.round((stats.pyq / stats.total) * 100) : 0}% of total
-                  </p>
-                </div>
-                <div className="p-3 bg-yellow-200 rounded-lg">
-                  <TrendingUp className="w-6 h-6 text-yellow-700" />
-                </div>
-              </div>
-            </Card>
-
-            {/* MCQ Questions */}
-            <Card className="p-5 bg-gradient-to-br from-green-50 to-green-100 border-green-200 hover:shadow-lg transition-shadow">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm font-medium text-green-700 mb-1">MCQ Questions</p>
-                  <p className="text-3xl font-bold text-green-900">{stats.mcq}</p>
-                  <p className="text-xs text-green-600 mt-1">
-                    Integer: {stats.integer}
-                  </p>
-                </div>
-                <div className="p-3 bg-green-200 rounded-lg">
-                  <ListTodo className="w-6 h-6 text-green-700" />
-                </div>
-              </div>
-            </Card>
-
-            {/* Published Questions */}
             <Card className="p-5 bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200 hover:shadow-lg transition-shadow">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm font-medium text-purple-700 mb-1">Published</p>
-                  <p className="text-3xl font-bold text-purple-900">{stats.published}</p>
-                  <p className="text-xs text-purple-600 mt-1">
-                    {stats.total - stats.published} drafts
-                  </p>
+                  <p className="text-sm font-medium text-purple-700 mb-1">PYQ</p>
+                  <p className="text-3xl font-bold text-purple-900">{stats.pyq}</p>
                 </div>
                 <div className="p-3 bg-purple-200 rounded-lg">
                   <CheckCircle2 className="w-6 h-6 text-purple-700" />
@@ -493,7 +509,7 @@ export default function QuestionOnboardingPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Exams</SelectItem>
-                    {mockExams.map((exam) => (
+                    {exams.map((exam) => (
                       <SelectItem key={exam.id} value={exam.id}>
                         {exam.name}
                       </SelectItem>
@@ -610,113 +626,118 @@ export default function QuestionOnboardingPage() {
           </div>
 
           {/* Questions Table */}
-          <div className="border rounded-lg overflow-x-auto">
-            <Table className="min-w-full">
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="min-w-[200px]">Question</TableHead>
-                  <TableHead className="whitespace-nowrap">Type</TableHead>
-                  <TableHead className="whitespace-nowrap">Exam</TableHead>
-                  <TableHead className="whitespace-nowrap">Paper</TableHead>
-                  <TableHead className="whitespace-nowrap">Difficulty</TableHead>
-                  <TableHead className="whitespace-nowrap">Marks</TableHead>
-                  <TableHead className="whitespace-nowrap">PYQ</TableHead>
-                  <TableHead className="whitespace-nowrap">Status</TableHead>
-                  <TableHead className="whitespace-nowrap">Created</TableHead>
-                  <TableHead className="text-right whitespace-nowrap">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredQuestions.length === 0 ? (
+          <div className="border rounded-lg overflow-hidden">
+            <div className="overflow-x-auto">
+              <Table className="table-fixed w-full">
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={10} className="text-center py-8 text-gray-500">
-                      <FileQuestion className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-                      <p>No questions found</p>
-                      <p className="text-sm">Add your first question to get started</p>
+                    <TableHead className="w-[35%]">Question</TableHead>
+                    <TableHead className="w-[12%]">Type</TableHead>
+                    <TableHead className="w-[10%]">Difficulty</TableHead>
+                    <TableHead className="w-[8%]">Marks</TableHead>
+                    <TableHead className="w-[6%]">PYQ</TableHead>
+                    <TableHead className="w-[10%]">Status</TableHead>
+                    <TableHead className="w-[10%]">Created</TableHead>
+                    <TableHead className="w-[9%] text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+              <TableBody>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-10">
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                        <span className="text-gray-600">Loading questions...</span>
+                      </div>
                     </TableCell>
                   </TableRow>
-                ) : paginatedQuestions.length === 0 ? (
+                ) : questions.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-10 text-gray-500">
-                      No questions found. Try adjusting your filters.
+                    <TableCell colSpan={8} className="text-center py-8 text-gray-500">
+                      <FileQuestion className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                      <p>No questions found</p>
+                      <p className="text-sm">Add your first question or adjust your filters</p>
                     </TableCell>
                   </TableRow>
                 ) : (
-                  paginatedQuestions.map((question) => (
+                  questions.map((question) => (
                     <TableRow key={question.id}>
-                      <TableCell className="max-w-xs">
-                        <div className="truncate" title={question.description}>
-                          {question.description}
+                      <TableCell>
+                        <div className="text-sm break-words overflow-hidden line-clamp-3">
+                          {question.content.question.html ? (
+                            <RichContentRenderer 
+                              content={{
+                                raw: question.content.question.raw || '',
+                                html: question.content.question.html.replace(/<img[^>]*>/g, ''),
+                                plainText: question.content.question.plain_text || '',
+                                assets: []
+                              }} 
+                              className="text-sm"
+                            />
+                          ) : (
+                            <span className="text-gray-400 italic">No content</span>
+                          )}
                         </div>
                       </TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded capitalize">
-                          {question.type.replace(/_/g, ' ')}
+                      <TableCell>
+                        <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded capitalize whitespace-nowrap">
+                          {question.answer_type.replace(/_/g, ' ')}
                         </span>
                       </TableCell>
-                      <TableCell className="max-w-[150px]">
-                        <div className="truncate" title={getExamName(question.examId)}>
-                          {getExamName(question.examId)}
-                        </div>
-                      </TableCell>
-                      <TableCell className="max-w-[150px]">
-                        <div className="truncate" title={getPaperName(question.paperId)}>
-                          {getPaperName(question.paperId)}
-                        </div>
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap">
+                      <TableCell>
                         <div className="flex items-center gap-2">
                           <div className={`w-2 h-2 rounded-full ${
-                            question.difficulty === 'easy' ? 'bg-green-500' :
-                            question.difficulty === 'medium' ? 'bg-yellow-500' :
+                            question.difficulty_label === 'EASY' ? 'bg-green-500' :
+                            question.difficulty_label === 'MEDIUM' ? 'bg-yellow-500' :
                             'bg-red-500'
                           }`} />
-                          <span className="capitalize text-sm">{question.difficulty}</span>
+                          <span className="capitalize text-sm whitespace-nowrap">{question.difficulty_label.toLowerCase()}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        <span className="text-sm">+{question.positiveMarks} / -{question.negativeMarks}</span>
+                      <TableCell>
+                        <span className="text-sm whitespace-nowrap">+{question.positive_marks} / -{question.negative_marks}</span>
                       </TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        {question.isPreviousYearQuestion ? (
-                          <div className="flex flex-col gap-1">
-                            <span className="text-xs px-2 py-1 bg-yellow-100 text-yellow-800 rounded w-fit">
-                              Yes
-                            </span>
-                            {question.examDate && (
-                              <span className="text-xs text-gray-600">
-                                📅 {new Date(question.examDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
-                              </span>
-                            )}
-                          </div>
+                      <TableCell>
+                        {question.is_previous_year_question ? (
+                          <span className="text-xs px-2 py-1 bg-yellow-100 text-yellow-800 rounded whitespace-nowrap">
+                            Yes
+                          </span>
                         ) : (
                           <span className="text-xs text-gray-500">No</span>
                         )}
                       </TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          <Switch
-                            checked={question.status === "published"}
-                            onCheckedChange={(checked) => {
-                              const newQuestions = questions.map(q => 
-                                q.id === question.id 
-                                  ? { ...q, status: checked ? "published" as const : "draft" as const }
-                                  : q
-                              );
-                              setQuestions(newQuestions);
-                            }}
-                          />
-                          <span className={`text-xs font-medium ${
-                            question.status === "published" 
-                              ? "text-green-600" 
-                              : "text-gray-500"
-                          }`}>
-                            {question.status === "published" ? "Published" : "Draft"}
-                          </span>
-                        </div>
+                      <TableCell className="min-w-[160px]">
+                        <Select
+                          value={question.status}
+                          onValueChange={(value: QuestionStatus) => handleStatusChange(question.id, value)}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="DRAFT" disabled>
+                              <span className="flex items-center gap-2">
+                                <div className="w-2 h-2 rounded-full bg-gray-400"></div>
+                                Draft
+                              </span>
+                            </SelectItem>
+                            <SelectItem value="UNDER_REVIEW">
+                              <span className="flex items-center gap-2">
+                                <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
+                                Under Review
+                              </span>
+                            </SelectItem>
+                            <SelectItem value="PUBLISHED">
+                              <span className="flex items-center gap-2">
+                                <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                                Published
+                              </span>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
                       </TableCell>
                       <TableCell className="text-sm text-gray-600 whitespace-nowrap">
-                        {formatDate(question.createdAt)}
+                        {new Date(question.created_at).toLocaleDateString()}
                       </TableCell>
                       <TableCell className="text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-2">
@@ -725,12 +746,12 @@ export default function QuestionOnboardingPage() {
                             size="sm"
                             onClick={() => {
                               const queryParams = new URLSearchParams({
-                                examId: question.examId || "",
-                                paperId: question.paperId || "",
-                                isPreviousYear: (question.isPreviousYearQuestion || false).toString(),
+                                examId: question.exam_id || "",
+                                paperId: question.paper_id || "",
+                                isPreviousYear: question.is_previous_year_question.toString(),
                                 standalone: "true",
                                 questionId: question.id,
-                                type: question.type
+                                type: question.answer_type
                               });
                               router.push(`/question-onboarding/editor?${queryParams.toString()}`);
                             }}
@@ -750,22 +771,23 @@ export default function QuestionOnboardingPage() {
                   ))
                 )}
               </TableBody>
-            </Table>
+              </Table>
+            </div>
           </div>
 
           {/* Pagination Controls */}
-          {filteredQuestions.length > 0 && (
+          {!loading && totalElements > 0 && (
             <Card className="p-4 mt-4">
               <div className="flex items-center justify-between">
                 <div className="text-sm text-gray-600">
-                  Showing <span className="font-semibold text-gray-900">{startIndex + 1}</span> to <span className="font-semibold text-gray-900">{Math.min(endIndex, filteredQuestions.length)}</span> of <span className="font-semibold text-gray-900">{filteredQuestions.length}</span> questions
+                  Showing <span className="font-semibold text-gray-900">{currentPage * pageSize + 1}</span> to <span className="font-semibold text-gray-900">{Math.min((currentPage + 1) * pageSize, totalElements)}</span> of <span className="font-semibold text-gray-900">{totalElements}</span> questions
                 </div>
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 0))}
+                  disabled={currentPage === 0}
                   className="flex items-center gap-1"
                 >
                   <ChevronLeft className="w-4 h-4" />
@@ -773,11 +795,11 @@ export default function QuestionOnboardingPage() {
                 </Button>
                 
                 <div className="flex items-center gap-1">
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                  {Array.from({ length: totalPages }, (_, i) => i).map((page) => {
                     // Show first page, last page, current page, and pages around current
                     if (
-                      page === 1 ||
-                      page === totalPages ||
+                      page === 0 ||
+                      page === totalPages - 1 ||
                       (page >= currentPage - 1 && page <= currentPage + 1)
                     ) {
                       return (
@@ -788,7 +810,7 @@ export default function QuestionOnboardingPage() {
                           onClick={() => setCurrentPage(page)}
                           className="w-9 h-9 p-0"
                         >
-                          {page}
+                          {page + 1}
                         </Button>
                       );
                     } else if (page === currentPage - 2 || page === currentPage + 2) {
@@ -801,8 +823,8 @@ export default function QuestionOnboardingPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages - 1))}
+                  disabled={currentPage === totalPages - 1}
                   className="flex items-center gap-1"
                 >
                   Next

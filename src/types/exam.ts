@@ -128,7 +128,7 @@ export interface Question {
   positiveMarks: number;
   negativeMarks: number;
   duration?: number;
-  difficulty: "easy" | "medium" | "hard";
+  difficulty: number; // 1-10 scale
   tags: string[];
   subjectId?: string;
   chapterId?: string;

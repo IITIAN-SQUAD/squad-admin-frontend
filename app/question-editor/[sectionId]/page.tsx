@@ -62,7 +62,7 @@ export default function QuestionEditorPage() {
     correctAnswers: [],
     positiveMarks: 4,
     negativeMarks: 1,
-    difficulty: "medium",
+    difficulty: 5,
     tags: [],
     topicId: "",
     sectionId: sectionId,
@@ -107,11 +107,11 @@ export default function QuestionEditorPage() {
           <div class="flex items-center gap-2 mb-2">
             <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">${question.type?.replace('_', ' ').toUpperCase()}</span>
             <div class="w-3 h-3 rounded-full ${
-              question.difficulty === 'easy' ? 'bg-green-500' :
-              question.difficulty === 'medium' ? 'bg-yellow-500' :
+              (question.difficulty || 5) <= 3 ? 'bg-green-500' :
+              (question.difficulty || 5) <= 6 ? 'bg-yellow-500' :
               'bg-red-500'
             }"></div>
-            <span class="text-sm capitalize">${question.difficulty}</span>
+            <span class="text-sm">${question.difficulty || 5}/10</span>
             <span class="text-sm text-gray-600">+${question.positiveMarks} / ${question.negativeMarks}</span>
           </div>
         </div>
@@ -251,7 +251,7 @@ export default function QuestionEditorPage() {
       correctAnswers: [],
       positiveMarks: 4,
       negativeMarks: -1,
-      difficulty: "medium",
+      difficulty: 5,
       tags: [],
       topicId: "",
       sectionId: sectionId,
@@ -758,37 +758,26 @@ export default function QuestionEditorPage() {
               </div>
 
               <div>
-                <Label htmlFor="difficulty">Difficulty Level *</Label>
-                <Select
-                  value={question.difficulty}
-                  onValueChange={(value: "easy" | "medium" | "hard") => 
-                    setQuestion(prev => ({ ...prev, difficulty: value }))
-                  }
-                >
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Select difficulty" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="easy">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-green-500" />
-                        Easy
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="medium">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-yellow-500" />
-                        Medium
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="hard">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-red-500" />
-                        Hard
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="difficulty">Difficulty Level (1-10) *</Label>
+                <div className="flex items-center gap-4 mt-2">
+                  <input
+                    type="range"
+                    id="difficulty"
+                    min="1"
+                    max="10"
+                    value={question.difficulty || 5}
+                    onChange={(e) => setQuestion(prev => ({ ...prev, difficulty: parseInt(e.target.value) }))}
+                    className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                  />
+                  <div className="flex items-center gap-2 min-w-[80px]">
+                    <div className={`w-3 h-3 rounded-full ${
+                      (question.difficulty || 5) <= 3 ? 'bg-green-500' :
+                      (question.difficulty || 5) <= 6 ? 'bg-yellow-500' :
+                      'bg-red-500'
+                    }`} />
+                    <span className="font-medium text-lg">{question.difficulty || 5}</span>
+                  </div>
+                </div>
               </div>
 
               {/* Tags */}
@@ -863,11 +852,11 @@ export default function QuestionEditorPage() {
               <div>
                 <div className="flex items-center gap-2 mb-3">
                   <div className={`w-3 h-3 rounded-full ${
-                    question.difficulty === 'easy' ? 'bg-green-500' :
-                    question.difficulty === 'medium' ? 'bg-yellow-500' :
+                    (question.difficulty || 5) <= 3 ? 'bg-green-500' :
+                    (question.difficulty || 5) <= 6 ? 'bg-yellow-500' :
                     'bg-red-500'
                   }`} />
-                  <span className="font-medium capitalize">{question.difficulty}</span>
+                  <span className="font-medium">{question.difficulty || 5}/10</span>
                   <span className="text-sm text-gray-600">
                     +{question.positiveMarks} / {question.negativeMarks} marks
                   </span>

@@ -1,4 +1,4 @@
-import { UserLock, Group, File, Users, BookOpen, FileText, GraduationCap, BookMarked, FileQuestion, ImagePlus, Upload } from "lucide-react";
+import { UserLock, Group, File, Users, BookOpen, FileText, GraduationCap, BookMarked, FileQuestion, ImagePlus, Upload, Sparkles } from "lucide-react";
 
 export interface SidebarLink {
     title: string;
@@ -36,9 +36,9 @@ export const SIDEBAR_LINKS = {
             icon: FileQuestion
         },
         {
-            title: "Bulk Upload",
-            url: "/bulk-upload",
-            icon: Upload
+            title: "AI Bulk Upload",
+            url: "/bulk-question-upload",
+            icon: Sparkles
         },
         {
             title: "Media Library",

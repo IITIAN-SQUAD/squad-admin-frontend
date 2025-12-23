@@ -30,7 +30,7 @@ export const topicSchema = z.object({
   parentTopicId: z.string().optional(),
   hierarchyPath: z.array(z.string()).default([]),
   order: z.number().min(0, "Order must be positive"),
-  difficulty: z.enum(['easy', 'medium', 'hard']),
+  difficulty: z.number().min(1).max(10),
   tags: z.array(z.string()).default([]),
 });
 
@@ -51,7 +51,7 @@ export const questionSchema = z.object({
   positiveMarks: z.number().min(0, "Positive marks must be non-negative"),
   negativeMarks: z.number().max(0, "Negative marks must be non-positive"),
   duration: z.number().min(0, "Duration must be positive").optional(),
-  difficulty: z.enum(['easy', 'medium', 'hard']),
+  difficulty: z.number().min(1).max(10),
   tags: z.array(z.string()).default([]),
   topicId: z.string().optional(),
   sectionId: z.string().optional(),

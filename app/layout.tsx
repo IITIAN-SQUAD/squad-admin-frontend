@@ -4,6 +4,7 @@ import "./globals.css";
 import React, { Suspense } from "react";
 import { ThemeProvider } from "@/components/ui/theme-provider";
 import ConditionalLayout from "@/components/layout/ConditionalLayout";
+import { Toaster } from "sonner";
 
 const fontImport = Geist({
   variable: "--font-urbanist-sans",
@@ -36,6 +37,7 @@ export default function RootLayout({
           <ConditionalLayout>
             {children}
           </ConditionalLayout>
+          <Toaster position="top-right" richColors />
         </ThemeProvider>
       </body>
     </html>

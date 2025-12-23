@@ -19,98 +19,59 @@ export function RichContentRenderer({
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (enableMath && containerRef.current && content.html) {
-      // Clear previous rendered state
-      if (containerRef.current) {
-        const renderedElements = containerRef.current.querySelectorAll('.katex-rendered, .katex-error');
-        renderedElements.forEach(el => {
-          el.classList.remove('katex-rendered', 'katex-error');
-        });
-      }
-      
-      // Small delay to ensure DOM is updated
-      setTimeout(() => {
+    if (!containerRef.current || !content.html) return;
+    
+    // Set the HTML content
+    containerRef.current.innerHTML = content.html;
+    
+    // Render math equations if enabled
+    if (enableMath) {
+      requestAnimationFrame(() => {
         if (containerRef.current) {
           renderMathEquations(containerRef.current);
         }
-      }, 50); // Increased delay to prevent conflicts
+      });
     }
   }, [content.html, enableMath]);
 
   const renderMathEquations = (container: HTMLElement) => {
-    try {
-      // Skip if container is not valid
-      if (!container || !container.isConnected) {
-        return;
+    // Render block equations ($$...$$)
+    const blockEquations = container.querySelectorAll('.equation-block');
+    blockEquations.forEach((element) => {
+      if (element.classList.contains('katex-rendered')) return;
+      
+      const latex = element.getAttribute('data-latex');
+      if (latex) {
+        try {
+          element.innerHTML = katex.renderToString(latex, {
+            displayMode: true,
+            throwOnError: false
+          });
+          element.classList.add('katex-rendered');
+        } catch (error) {
+          console.error('KaTeX error:', error);
+        }
       }
+    });
 
-      // Render block equations
-      const blockEquations = container.querySelectorAll('.equation-block');
-      blockEquations.forEach((element, index) => {
-        const latex = element.getAttribute('data-latex') || element.textContent;
-        if (latex && latex.trim()) {
-          try {
-            // Skip if element is already processed
-            if (element.classList.contains('katex-rendered')) {
-              return;
-            }
-            
-            const cleanLatex = latex.trim();
-            console.log('Rendering LaTeX:', cleanLatex);
-            
-            // Try to render with KaTeX
-            const rendered = katex.renderToString(cleanLatex, {
-              displayMode: true,
-              throwOnError: false,
-              strict: false,
-              trust: true,
-              output: 'html'
-            });
-            
-            element.innerHTML = rendered;
-            element.classList.add('katex-rendered');
-            console.log('Rendered result:', rendered.substring(0, 100) + '...');
-          } catch (error) {
-            console.error('KaTeX block render error:', error, 'LaTeX:', latex);
-            element.textContent = `[Math Error: ${latex}]`;
-            element.classList.add('katex-error');
-          }
+    // Render inline equations ($...$)
+    const inlineEquations = container.querySelectorAll('.equation-inline');
+    inlineEquations.forEach((element) => {
+      if (element.classList.contains('katex-rendered')) return;
+      
+      const latex = element.getAttribute('data-latex');
+      if (latex) {
+        try {
+          element.innerHTML = katex.renderToString(latex, {
+            displayMode: false,
+            throwOnError: false
+          });
+          element.classList.add('katex-rendered');
+        } catch (error) {
+          console.error('KaTeX error:', error);
         }
-      });
-
-      // Render inline equations
-      const inlineEquations = container.querySelectorAll('.equation-inline');
-      inlineEquations.forEach((element, index) => {
-        const latex = element.getAttribute('data-latex') || element.textContent;
-        if (latex && latex.trim()) {
-          try {
-            // Skip if element is already processed
-            if (element.classList.contains('katex-rendered')) {
-              return;
-            }
-            
-            element.innerHTML = katex.renderToString(latex.trim(), {
-              displayMode: false,
-              throwOnError: false,
-              strict: false,
-              trust: true,
-              macros: {
-                "\\bmatrix": "\\begin{bmatrix}#1\\end{bmatrix}",
-                "\\pmatrix": "\\begin{pmatrix}#1\\end{pmatrix}",
-                "\\vmatrix": "\\begin{vmatrix}#1\\end{vmatrix}"
-              }
-            });
-            element.classList.add('katex-rendered');
-          } catch (error) {
-            console.warn('KaTeX inline render error:', error, 'LaTeX:', latex);
-            element.textContent = `[Math Error: ${latex}]`;
-            element.classList.add('katex-error');
-          }
-        }
-      });
-    } catch (error) {
-      console.error('Failed to render equations:', error);
-    }
+      }
+    });
   };
 
 
@@ -126,7 +87,6 @@ export function RichContentRenderer({
     <div 
       ref={containerRef}
       className={`rich-content prose prose-sm max-w-none overflow-x-hidden break-words ${className}`}
-      dangerouslySetInnerHTML={{ __html: content.html }}
       style={{
         // Custom styles for rich content
         '--prose-body': 'rgb(55 65 81)',

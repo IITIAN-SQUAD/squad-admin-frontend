@@ -18,11 +18,11 @@ export function QuestionPreview({ question, selectedType }: QuestionPreviewProps
           {selectedType ? selectedType.replace(/_/g, ' ') : 'No type selected'}
         </span>
         <div className={`w-2 h-2 rounded-full ${
-          question.difficulty === 'easy' ? 'bg-green-500' :
-          question.difficulty === 'medium' ? 'bg-yellow-500' :
+          (question.difficulty || 5) <= 3 ? 'bg-green-500' :
+          (question.difficulty || 5) <= 6 ? 'bg-yellow-500' :
           'bg-red-500'
         }`} />
-        <span className="text-sm capitalize">{question.difficulty}</span>
+        <span className="text-sm">{question.difficulty || 5}/10</span>
         <span className="text-sm text-gray-600 ml-auto">
           +{question.positiveMarks} / -{question.negativeMarks}
         </span>
@@ -54,6 +54,8 @@ export function QuestionPreview({ question, selectedType }: QuestionPreviewProps
                 <div className="flex-1">
                   {option.content?.html ? (
                     <RichContentRenderer content={option.content} />
+                  ) : option.value ? (
+                    <div className="text-sm">{option.value}</div>
                   ) : (
                     <span className="text-gray-400 italic">Option not set</span>
                   )}

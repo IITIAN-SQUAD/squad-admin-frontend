@@ -25,6 +25,62 @@ import {
 } from 'lucide-react';
 import { RichContent, MediaAsset } from '@/src/types/exam';
 
+// Helper to extract text from TipTap JSON while preserving LaTeX and images
+const extractTextFromTipTapDoc = (doc: any): string => {
+  let text = '';
+  
+  const processNode = (node: any): string => {
+    let nodeText = '';
+    
+    // Handle different node types
+    if (node.type === 'paragraph') {
+      if (node.content && Array.isArray(node.content)) {
+        node.content.forEach((child: any) => {
+          nodeText += processNode(child);
+        });
+      }
+      nodeText += '\n';
+    } else if (node.type === 'text') {
+      nodeText += node.text || '';
+    } else if (node.type === 'image') {
+      // Preserve image markdown
+      const src = node.attrs?.src || '';
+      const alt = node.attrs?.alt || '';
+      const id = node.attrs?.['data-id'] || node.attrs?.id || '';
+      if (id) {
+        nodeText += `![${alt}](${src}){#${id}}`;
+      } else {
+        nodeText += `![${alt}](${src})`;
+      }
+    } else if (node.type === 'hardBreak') {
+      nodeText += '\n';
+    }
+    
+    // Handle marks (formatting like bold, italic, etc.)
+    if (node.marks && Array.isArray(node.marks)) {
+      node.marks.forEach((mark: any) => {
+        if (mark.type === 'bold') {
+          nodeText = `**${nodeText}**`;
+        } else if (mark.type === 'italic') {
+          nodeText = `*${nodeText}*`;
+        } else if (mark.type === 'code') {
+          nodeText = `\`${nodeText}\``;
+        }
+      });
+    }
+    
+    return nodeText;
+  };
+  
+  if (doc.content && Array.isArray(doc.content)) {
+    doc.content.forEach((node: any) => {
+      text += processNode(node);
+    });
+  }
+  
+  return text.trim();
+};
+
 interface RichContentEditorProps {
   value: RichContent;
   onChange: (content: RichContent) => void;
@@ -54,25 +110,63 @@ export function RichContentEditor({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // Helper to convert HTML back to markdown for editing (unused for now, kept for future use)
+  const htmlToMarkdown = (html: string): string => {
+    if (!html) return '';
+    
+    let markdown = html;
+    
+    // Convert equation spans back to LaTeX (handle both formats)
+    markdown = markdown.replace(/<div[^>]*class="equation-block"[^>]*data-latex="([^"]*)"[^>]*>[\s\S]*?<\/div>/g, '$$$$1$$');
+    markdown = markdown.replace(/<span[^>]*class="equation-inline"[^>]*data-latex="([^"]*)"[^>]*>[\s\S]*?<\/span>/g, '$$$1$$');
+    
+    // Convert images back to markdown (handle different attribute orders)
+    markdown = markdown.replace(/<img[^>]*src="([^"]*)"[^>]*alt="([^"]*)"[^>]*data-id="([^"]*)"[^>]*\/?>/g, '![$2]($1){#$3}');
+    markdown = markdown.replace(/<img[^>]*alt="([^"]*)"[^>]*src="([^"]*)"[^>]*data-id="([^"]*)"[^>]*\/?>/g, '![$1]($2){#$3}');
+    markdown = markdown.replace(/<img[^>]*src="([^"]*)"[^>]*alt="([^"]*)"[^>]*\/?>/g, '![$2]($1)');
+    markdown = markdown.replace(/<img[^>]*alt="([^"]*)"[^>]*src="([^"]*)"[^>]*\/?>/g, '![$1]($2)');
+    
+    // Convert formatting
+    markdown = markdown.replace(/<strong>([\s\S]*?)<\/strong>/g, '**$1**');
+    markdown = markdown.replace(/<em>([\s\S]*?)<\/em>/g, '*$1*');
+    markdown = markdown.replace(/<u>([\s\S]*?)<\/u>/g, '__$1__');
+    markdown = markdown.replace(/<code>([\s\S]*?)<\/code>/g, '`$1`');
+    
+    // Convert line breaks and paragraphs
+    markdown = markdown.replace(/<br\s*\/?>/g, '\n');
+    markdown = markdown.replace(/<\/p>\s*<p>/g, '\n\n');
+    markdown = markdown.replace(/<\/?p>/g, '');
+    markdown = markdown.replace(/<\/?div[^>]*>/g, '\n');
+    
+    // Clean up extra whitespace
+    markdown = markdown.replace(/\n{3,}/g, '\n\n');
+    
+    return markdown.trim();
+  };
+
   // Parse the raw content (assuming it's JSON from TipTap or markdown)
   const [editorContent, setEditorContent] = useState(() => {
-    try {
-      return value.raw ? JSON.parse(value.raw) : '';
-    } catch {
-      return value.raw || '';
+    // Priority: raw > plainText
+    // raw contains markdown with LaTeX and images
+    if (value.raw) {
+      return value.raw;
     }
+    
+    // Fallback to plainText only if raw is not available
+    return value.plainText || '';
   });
 
   const updateContent = useCallback((newContent: string) => {
     setEditorContent(newContent);
     
     // Generate HTML and plain text from the content
+    // newContent is the plain text from textarea, use it directly for conversion
     const html = convertToHTML(newContent);
     const plainText = stripHTML(html);
     const assets = extractAssets(newContent);
 
     onChange({
-      raw: typeof newContent === 'string' ? newContent : JSON.stringify(newContent),
+      raw: newContent, // Store plain text as raw, not JSON
       html,
       plainText,
       assets
@@ -135,18 +229,33 @@ export function RichContentEditor({
     }
   };
 
+
   const convertToHTML = (content: string): string => {
     if (!content) return '';
     
-    let html = content;
+    // Check if content is TipTap JSON format
+    let textContent = content;
+    try {
+      const parsed = JSON.parse(content);
+      if (parsed.type === 'doc' && parsed.content) {
+        // Extract text from TipTap JSON
+        textContent = extractTextFromTipTapDoc(parsed);
+      }
+    } catch {
+      // Not JSON, use as-is
+      textContent = content;
+    }
     
-    // Convert LaTeX equations
+    let html = textContent;
+    
+    // Convert block LaTeX equations ($$...$$)
     html = html.replace(/\$\$(.*?)\$\$/g, (match, latex) => {
-      return `<div class="equation-block" data-latex="${latex}">${latex}</div>`;
+      return `<div class="equation-block" data-latex="${latex.trim()}">${latex.trim()}</div>`;
     });
     
+    // Convert inline LaTeX equations ($...$)
     html = html.replace(/\$(.*?)\$/g, (match, latex) => {
-      return `<span class="equation-inline" data-latex="${latex}">${latex}</span>`;
+      return `<span class="equation-inline" data-latex="${latex.trim()}">${latex.trim()}</span>`;
     });
     
     // Convert markdown formatting
@@ -190,14 +299,28 @@ export function RichContentEditor({
     // Convert links
     html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
     
-    // Convert line breaks
+    // Convert line breaks to <br> but preserve block equations
     html = html.replace(/\n/g, '<br>');
+    
+    // Wrap in paragraph if not already wrapped in block elements
+    if (!html.startsWith('<div') && !html.startsWith('<p>')) {
+      html = `<p>${html}</p>`;
+    }
     
     return html;
   };
 
   const stripHTML = (html: string): string => {
-    return html.replace(/<[^>]*>/g, '').replace(/&[^;]+;/g, ' ').trim();
+    // First, restore equations from data-latex attributes before stripping HTML
+    let text = html.replace(/<div class="equation-block" data-latex="([^"]*)">[^<]*<\/div>/g, '$$$$1$$');
+    text = text.replace(/<span class="equation-inline" data-latex="([^"]*)">[^<]*<\/span>/g, '$$$1$$');
+    
+    // Restore images to markdown format before stripping HTML
+    text = text.replace(/<img[^>]*src="([^"]*)"[^>]*alt="([^"]*)"[^>]*data-id="([^"]*)"[^>]*>/g, '![$2]($1){#$3}');
+    text = text.replace(/<img[^>]*src="([^"]*)"[^>]*alt="([^"]*)"[^>]*>/g, '![$2]($1)');
+    
+    // Then strip remaining HTML tags
+    return text.replace(/<[^>]*>/g, '').replace(/&[^;]+;/g, ' ').trim();
   };
 
   const extractAssets = (content: string): string[] => {
@@ -423,8 +546,8 @@ export function RichContentEditor({
       {/* Content Stats */}
       <div className="flex justify-between text-xs text-gray-500">
         <span>Characters: {editorContent.length}</span>
-        <span>Words: {value.plainText.split(/\s+/).filter(Boolean).length}</span>
-        {value.assets.length > 0 && <span>Assets: {value.assets.length}</span>}
+        <span>Words: {value.plainText ? value.plainText.split(/\s+/).filter(Boolean).length : 0}</span>
+        {value.assets && value.assets.length > 0 && <span>Assets: {value.assets.length}</span>}
       </div>
     </div>
   );
