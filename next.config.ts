@@ -18,7 +18,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: '/api/backend/:path*',
-        destination: 'https://api.iitiansquad.com/:path*',
+        destination: 'https://serve.iitiansquad.com/:path*',
       },
     ];
   },

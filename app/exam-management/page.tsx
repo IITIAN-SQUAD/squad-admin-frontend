@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import PageHeader from "@/src/components/page/page-header";
 import PageTitle from "@/src/components/page/page-title";
 import PageWrapper from "@/src/components/page/page-wrapper";
 import { Button } from "@/components/ui/button";
-import { Plus, Search, Edit, Trash2 } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -24,40 +24,33 @@ import {
 } from "@/components/ui/dialog";
 import ExamForm from "@/src/components/exam/ExamForm";
 import { Exam } from "@/src/types/exam";
-
-// Mock data - replace with actual API calls
-const mockExams: Exam[] = [
-  {
-    id: "1",
-    name: "JEE Main 2024",
-    description: "Joint Entrance Examination Main for engineering admissions",
-    countries: ["India"],
-    metadata: [
-      { key: "conducting_body", value: "NTA" },
-      { key: "mode", value: "Online" },
-    ],
-    createdAt: new Date("2024-01-01"),
-    updatedAt: new Date("2024-01-15"),
-  },
-  {
-    id: "2",
-    name: "NEET 2024",
-    description: "National Eligibility cum Entrance Test for medical admissions",
-    countries: ["India"],
-    metadata: [
-      { key: "conducting_body", value: "NTA" },
-      { key: "mode", value: "Offline" },
-    ],
-    createdAt: new Date("2024-01-10"),
-    updatedAt: new Date("2024-01-20"),
-  },
-];
+import examService from "@/src/services/exam.service";
 
 export default function ExamManagementPage() {
-  const [exams, setExams] = useState<Exam[]>(mockExams);
+  const [exams, setExams] = useState<Exam[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingExam, setEditingExam] = useState<Exam | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const fetchExams = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const data = await examService.getAllExams();
+      setExams(data);
+    } catch (error: any) {
+      console.error('Failed to fetch exams:', error);
+      alert(error.message || 'Failed to fetch exams');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Fetch exams on mount
+  useEffect(() => {
+    fetchExams();
+  }, [fetchExams]);
 
   const filteredExams = exams.filter(
     (exam) =>
@@ -65,34 +58,74 @@ export default function ExamManagementPage() {
       exam.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleCreateExam = (examData: Omit<Exam, "id" | "createdAt" | "updatedAt">) => {
-    const newExam: Exam = {
-      ...examData,
-      id: Date.now().toString(),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    setExams([...exams, newExam]);
-    setIsCreateDialogOpen(false);
+  const handleCreateExam = async (examData: Omit<Exam, "id" | "createdAt" | "updatedAt">) => {
+    try {
+      setIsSubmitting(true);
+      const newExam = await examService.createExam({
+        name: examData.name,
+        description: examData.description,
+        countries: examData.countries,
+        subject_ids: examData.subject_ids,
+        metadata: examData.metadata,
+      });
+      setExams([...exams, newExam]);
+      setIsCreateDialogOpen(false);
+      alert('Exam created successfully');
+    } catch (error: any) {
+      console.error('Failed to create exam:', error);
+      alert(error.message || 'Failed to create exam');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleUpdateExam = (examData: Omit<Exam, "id" | "createdAt" | "updatedAt">) => {
+  const handleUpdateExam = async (examData: Omit<Exam, "id" | "createdAt" | "updatedAt">) => {
     if (!editingExam) return;
     
-    const updatedExam: Exam = {
-      ...examData,
-      id: editingExam.id,
-      createdAt: editingExam.createdAt,
-      updatedAt: new Date(),
-    };
-    
-    setExams(exams.map(exam => exam.id === editingExam.id ? updatedExam : exam));
-    setEditingExam(null);
+    try {
+      setIsSubmitting(true);
+      const updatedExam = await examService.updateExam(editingExam.id, {
+        name: examData.name,
+        description: examData.description,
+        countries: examData.countries,
+        subject_ids: examData.subject_ids,
+        metadata: examData.metadata,
+      });
+      setExams(exams.map(exam => exam.id === editingExam.id ? updatedExam : exam));
+      setEditingExam(null);
+      alert('Exam updated successfully');
+    } catch (error: any) {
+      console.error('Failed to update exam:', error);
+      alert(error.message || 'Failed to update exam');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleDeleteExam = (examId: string) => {
-    if (confirm("Are you sure you want to delete this exam?")) {
-      setExams(exams.filter(exam => exam.id !== examId));
+  const handleDeleteExam = async (examId: string) => {
+    if (!confirm("Are you sure you want to delete this exam? It will be archived.")) return;
+    
+    try {
+      await examService.deleteExam(examId);
+      fetchExams(); // Refresh list
+      alert('Exam archived successfully');
+    } catch (error: any) {
+      console.error('Failed to delete exam:', error);
+      alert(error.message || 'Failed to delete exam');
+    }
+  };
+
+  const handleToggleStatus = async (examId: string, currentStatus: string) => {
+    const newStatus = currentStatus === 'DRAFT' ? 'PUBLISHED' : 'DRAFT';
+    if (!confirm(`Change status to ${newStatus}?`)) return;
+    
+    try {
+      await examService.updateExamStatus(examId, newStatus as any);
+      fetchExams(); // Refresh list
+      alert(`Status updated to ${newStatus}`);
+    } catch (error: any) {
+      console.error('Failed to update status:', error);
+      alert(error.message || 'Failed to update status');
     }
   };
 
@@ -133,41 +166,69 @@ export default function ExamManagementPage() {
           />
         </div>
 
+        {/* Loading State */}
+        {isLoading && (
+          <div className="flex justify-center items-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-yellow-500" />
+            <span className="ml-2 text-gray-600">Loading exams...</span>
+          </div>
+        )}
+
         {/* Exams Table */}
-        <div className="border rounded-lg">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Countries</TableHead>
-                <TableHead>Metadata</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+        {!isLoading && (
+          <div className="border rounded-lg">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead>Countries</TableHead>
+                  <TableHead>Subjects</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
               {filteredExams.map((exam) => (
                 <TableRow key={exam.id}>
                   <TableCell className="font-medium">{exam.name}</TableCell>
                   <TableCell className="max-w-xs truncate">{exam.description}</TableCell>
                   <TableCell>{exam.countries.join(", ")}</TableCell>
                   <TableCell>
-                    <div className="flex flex-wrap gap-1">
-                      {exam.metadata?.slice(0, 2).map((meta, index) => (
-                        <span
-                          key={index}
-                          className="inline-block bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded"
-                        >
-                          {meta.key}: {meta.value}
-                        </span>
-                      ))}
-                      {exam.metadata && exam.metadata.length > 2 && (
-                        <span className="text-xs text-gray-500">
-                          +{exam.metadata.length - 2} more
-                        </span>
-                      )}
-                    </div>
+                    {exam.subjects && exam.subjects.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {exam.subjects.slice(0, 2).map((subject) => (
+                          <span
+                            key={subject.id}
+                            className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded"
+                          >
+                            {subject.code}
+                          </span>
+                        ))}
+                        {exam.subjects.length > 2 && (
+                          <span className="text-xs text-gray-500">
+                            +{exam.subjects.length - 2}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-gray-400 text-xs">No subjects</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleToggleStatus(exam.id, exam.status)}
+                      className={`text-xs ${
+                        exam.status === 'PUBLISHED' 
+                          ? 'bg-green-50 text-green-700 border-green-200' 
+                          : 'bg-yellow-50 text-yellow-700 border-yellow-200'
+                      }`}
+                    >
+                      {exam.status}
+                    </Button>
                   </TableCell>
                   <TableCell>{formatDate(exam.createdAt)}</TableCell>
                   <TableCell className="text-right">
@@ -204,11 +265,13 @@ export default function ExamManagementPage() {
                   </TableCell>
                 </TableRow>
               ))}
-            </TableBody>
-          </Table>
-        </div>
+              </TableBody>
+            </Table>
+          </div>
+        )}
 
-        {filteredExams.length === 0 && (
+        {/* Empty State */}
+        {!isLoading && filteredExams.length === 0 && (
           <div className="text-center py-8 text-gray-500">
             {searchTerm ? "No exams found matching your search." : "No exams created yet."}
           </div>

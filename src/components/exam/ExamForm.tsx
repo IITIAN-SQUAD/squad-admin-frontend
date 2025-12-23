@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Plus, X } from "lucide-react";
 import { examSchema, ExamFormData } from "@/src/schemas/exam";
 import { Exam } from "@/src/types/exam";
+import hierarchyService, { HierarchyNode } from "@/src/services/hierarchy.service";
 
 interface ExamFormProps {
   initialData?: Exam;
@@ -33,6 +34,10 @@ export default function ExamForm({ initialData, onSubmit }: ExamFormProps) {
   const [selectedCountries, setSelectedCountries] = useState<string[]>(
     initialData?.countries || []
   );
+  const [subjects, setSubjects] = useState<HierarchyNode[]>([]);
+  const [selectedSubjects, setSelectedSubjects] = useState<string[]>(
+    initialData?.subject_ids || []
+  );
 
   const {
     register,
@@ -51,6 +56,18 @@ export default function ExamForm({ initialData, onSubmit }: ExamFormProps) {
     },
   });
 
+  useEffect(() => {
+    const fetchSubjects = async () => {
+      try {
+        const data = await hierarchyService.getAllSubjects();
+        setSubjects(data);
+      } catch (error) {
+        console.error('Failed to fetch subjects:', error);
+      }
+    };
+    fetchSubjects();
+  }, []);
+
   const { fields, append, remove } = useFieldArray({
     control,
     name: "metadata",
@@ -65,13 +82,23 @@ export default function ExamForm({ initialData, onSubmit }: ExamFormProps) {
     setValue("countries", newCountries);
   };
 
+  const handleSubjectToggle = (subjectId: string) => {
+    const newSubjects = selectedSubjects.includes(subjectId)
+      ? selectedSubjects.filter((id) => id !== subjectId)
+      : [...selectedSubjects, subjectId];
+    
+    setSelectedSubjects(newSubjects);
+  };
+
   const onFormSubmit = (data: ExamFormData) => {
     onSubmit({
       name: data.name,
       description: data.description,
       countries: selectedCountries,
+      subject_ids: selectedSubjects,
       metadata: data.metadata.filter(m => m.key && m.value),
-    });
+      status: initialData?.status || 'DRAFT',
+    } as any);
   };
 
   return (
@@ -124,6 +151,32 @@ export default function ExamForm({ initialData, onSubmit }: ExamFormProps) {
         </div>
         {errors.countries && (
           <p className="text-red-500 text-sm mt-1">{errors.countries.message}</p>
+        )}
+      </div>
+
+      {/* Subjects */}
+      <div>
+        <Label>Subjects</Label>
+        <p className="text-sm text-gray-500 mb-2">Select subjects for this exam</p>
+        <div className="mt-2 grid grid-cols-2 gap-2 max-h-48 overflow-y-auto border rounded p-3">
+          {subjects.length === 0 && (
+            <p className="text-sm text-gray-400 col-span-2">No subjects available. Create subjects first.</p>
+          )}
+          {subjects.map((subject) => (
+            <label key={subject.id} className="flex items-center space-x-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={selectedSubjects.includes(subject.id)}
+                onChange={() => handleSubjectToggle(subject.id)}
+                className="rounded border-gray-300"
+              />
+              <span className="text-sm font-medium">{subject.code}</span>
+              <span className="text-xs text-gray-500">- {subject.name}</span>
+            </label>
+          ))}
+        </div>
+        {selectedSubjects.length > 0 && (
+          <p className="text-xs text-gray-600 mt-1">{selectedSubjects.length} subject(s) selected</p>
         )}
       </div>
 

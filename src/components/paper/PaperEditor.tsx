@@ -163,8 +163,8 @@ function SectionNode({
                     >
                       <span className="text-sm font-medium text-gray-600">Q{index + 1}</span>
                       <div className={`w-2 h-2 rounded-full ${
-                        question.difficulty === 'easy' ? 'bg-green-500' :
-                        question.difficulty === 'medium' ? 'bg-yellow-500' :
+                        (question.difficulty || 5) <= 3 ? 'bg-green-500' :
+                        (question.difficulty || 5) <= 6 ? 'bg-yellow-500' :
                         'bg-red-500'
                       }`} />
                       <div className="flex-1">
@@ -173,7 +173,7 @@ function SectionNode({
                           <span>+{question.positiveMarks}</span>
                           <span>{question.negativeMarks}</span>
                           <span>{question.options.length} options</span>
-                          <span className="capitalize">{question.difficulty}</span>
+                          <span>{question.difficulty || 5}/10</span>
                         </div>
                       </div>
                     </div>
@@ -432,11 +432,11 @@ export function PaperEditor({ paper, onBack, onUpdate }: PaperEditorProps) {
               <div className="bg-blue-50 p-4 rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
                   <div className={`w-3 h-3 rounded-full ${
-                    viewingQuestion.difficulty === 'easy' ? 'bg-green-500' :
-                    viewingQuestion.difficulty === 'medium' ? 'bg-yellow-500' :
+                    (viewingQuestion.difficulty || 5) <= 3 ? 'bg-green-500' :
+                    (viewingQuestion.difficulty || 5) <= 6 ? 'bg-yellow-500' :
                     'bg-red-500'
                   }`} />
-                  <span className="font-medium capitalize">{viewingQuestion.difficulty}</span>
+                  <span className="font-medium">{viewingQuestion.difficulty || 5}/10</span>
                   <span className="text-sm text-gray-600">
                     +{viewingQuestion.positiveMarks} / {viewingQuestion.negativeMarks} marks
                   </span>
