@@ -13,6 +13,7 @@ export interface RichContent {
 
 export interface OptionContent {
   id: string;
+  label?: string;
   content: RichContent;
 }
 
