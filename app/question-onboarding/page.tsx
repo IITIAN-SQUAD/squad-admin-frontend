@@ -621,7 +621,7 @@ export default function QuestionOnboardingPage() {
                 <Select 
                   value={selectedStatuses.join(',')} 
                   onValueChange={(value) => {
-                    setSelectedStatuses(value ? value.split(',') : []);
+                    setSelectedStatuses(value ? value.split(',') as QuestionStatus[] : []);
                   }}
                 >
                   <SelectTrigger id="filterStatus" className="mt-1">
@@ -645,7 +645,7 @@ export default function QuestionOnboardingPage() {
                     if (value === 'all') {
                       setSelectedDifficulties([]);
                     } else {
-                      setSelectedDifficulties(value.split(',').filter(Boolean));
+                      setSelectedDifficulties(value.split(',').filter(Boolean) as QuestionDifficulty[]);
                     }
                   }}
                 >
@@ -670,7 +670,7 @@ export default function QuestionOnboardingPage() {
                     if (value === 'all') {
                       setSelectedAnswerTypes([]);
                     } else {
-                      setSelectedAnswerTypes(value.split(',').filter(Boolean));
+                      setSelectedAnswerTypes(value.split(',').filter(Boolean) as AnswerType[]);
                     }
                   }}
                 >

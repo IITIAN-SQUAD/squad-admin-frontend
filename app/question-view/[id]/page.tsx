@@ -47,10 +47,25 @@ export default function QuestionViewPage() {
       
       // Initialize edit state
       setEditedQuestion({
-        questionText: data.content.question || { raw: '', html: '', plainText: '', assets: [] },
+        questionText: data.content.question ? {
+          raw: data.content.question.raw || '',
+          html: data.content.question.html,
+          plainText: data.content.question.plain_text || '',
+          assets: []
+        } : { raw: '', html: '', plainText: '', assets: [] },
         options: data.answer?.pool?.options || [],
-        hint: data.content.hints || { raw: '', html: '', plainText: '', assets: [] },
-        solution: data.answer?.solution?.explanation || { raw: '', html: '', plainText: '', assets: [] },
+        hint: data.content.hints ? {
+          raw: data.content.hints.raw || '',
+          html: data.content.hints.html,
+          plainText: data.content.hints.plain_text || '',
+          assets: []
+        } : { raw: '', html: '', plainText: '', assets: [] },
+        solution: data.answer?.solution?.explanation ? {
+          raw: data.answer.solution.explanation.raw || '',
+          html: data.answer.solution.explanation.html,
+          plainText: data.answer.solution.explanation.plain_text || '',
+          assets: []
+        } : { raw: '', html: '', plainText: '', assets: [] },
       });
     } catch (error) {
       console.error('Failed to fetch question:', error);
