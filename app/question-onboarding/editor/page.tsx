@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Plus, X, Save, Eye, Info } from "lucide-react";
+import { ArrowLeft, Plus, X, Save, Eye, Info, Crop as CropIcon } from "lucide-react";
 import { Question, QuestionType, Exam, Paper } from "@/src/types/exam";
 import { RichContentEditor } from '@/src/components/ui/rich-content-editor';
 import { RichContentRenderer } from '@/src/components/ui/rich-content-renderer';
@@ -24,6 +24,10 @@ import paperService from '@/src/services/paper.service';
 import hierarchyService from '@/src/services/hierarchy.service';
 import questionService, { CreateQuestionRequest, AnswerType } from '@/src/services/question.service';
 import { toast } from 'sonner';
+import { imageProcessingOrchestrator, ProcessedImage } from "@/src/services/image-processing-orchestrator.service";
+import { aiService } from "@/src/services/ai.service";
+import ReactCrop, { type Crop } from 'react-image-crop';
+import 'react-image-crop/dist/ReactCrop.css';
 
 const mockTopics = [
   { id: "1", name: "Kinematics", subject: "Physics" },
@@ -35,8 +39,14 @@ const mockTopics = [
 const focusedQuestionTypes: { value: QuestionType; label: string; description: string }[] = [
   { value: "single_choice_mcq", label: "Single Choice MCQ", description: "One correct answer" },
   { value: "multiple_choice_mcq", label: "Multiple Choice MCQ", description: "Multiple correct answers" },
-  { value: "integer_based", label: "Integer Based", description: "Whole number answer" },
+  { value: "integer_based", label: "Integer Based", description: "Numerical answer" },
 ];
+
+// Helper function to clean crop buttons from HTML
+const cleanCropButtonsFromHTML = (html: string): string => {
+  // Remove any crop buttons that might be embedded in the HTML
+  return html.replace(/<button[^>]*class="[^"]*crop-button[^"]*"[^>]*>.*?<\/button>/gi, '');
+};
 
 function QuestionEditorPageContent() {
   const router = useRouter();
@@ -55,6 +65,12 @@ function QuestionEditorPageContent() {
   const [chapters, setChapters] = useState<any[]>([]);
   const [topics, setTopics] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Cropping flow state
+  const [questionToCrop, setQuestionToCrop] = useState<Partial<Question> | null>(null);
+  const [imageToCrop, setImageToCrop] = useState<ProcessedImage | null>(null);
+  const [imageBlobUrl, setImageBlobUrl] = useState<string | null>(null);
+  const [crop, setCrop] = useState<Crop>();
 
   const [selectedType, setSelectedType] = useState<QuestionType | "">(initialType || "");
   const [question, setQuestion] = useState<Partial<Question>>({
@@ -107,7 +123,7 @@ function QuestionEditorPageContent() {
             content: {
               question: {
                 raw: questionData.content.question.raw || '',
-                html: questionData.content.question.html || '',
+                html: cleanCropButtonsFromHTML(questionData.content.question.html || ''),
                 plainText: questionData.content.question.plain_text || '',
                 assets: []
               },
@@ -186,8 +202,8 @@ function QuestionEditorPageContent() {
           }
 
           // Map integer answer
-          if (questionData.answer_type === 'NUMERICAL' && questionData.answer.key.numerical_value !== undefined) {
-            mappedQuestion.integerAnswer = questionData.answer.key.numerical_value;
+          if (questionData.answer_type === 'NUMERICAL' && questionData.answer.key.correct_value !== undefined) {
+            mappedQuestion.integerAnswer = questionData.answer.key.correct_value;
           }
 
           setQuestion(mappedQuestion);
@@ -334,6 +350,134 @@ function QuestionEditorPageContent() {
     setQuestion(prev => ({ ...prev, tags: prev.tags?.filter(tag => tag !== tagToRemove) || [] }));
   };
 
+  const extractImagesFromHTML = (html: string): string[] => {
+    const imgRegex = /<img[^>]+src="([^">]+)"/g;
+    const images: string[] = [];
+    let match;
+    while ((match = imgRegex.exec(html)) !== null) {
+      images.push(match[1]);
+    }
+    return images;
+  };
+
+  // Load image as blob when selected for cropping
+  useEffect(() => {
+    if (!imageToCrop) {
+      if (imageBlobUrl) {
+        URL.revokeObjectURL(imageBlobUrl);
+        setImageBlobUrl(null);
+      }
+      return;
+    }
+
+    const loadImageAsBlob = async () => {
+      try {
+        const response = await fetch(imageToCrop.s3Url, {
+          mode: 'cors',
+          credentials: 'omit',
+          cache: 'no-cache'
+        });
+        if (!response.ok) {
+          throw new Error(`Failed to fetch image: ${response.status}`);
+        }
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        setImageBlobUrl(blobUrl);
+      } catch (error) {
+        console.error('Failed to load image:', error);
+        toast.error('Failed to load image for cropping');
+        setImageToCrop(null);
+      }
+    };
+
+    loadImageAsBlob();
+
+    return () => {
+      if (imageBlobUrl) {
+        URL.revokeObjectURL(imageBlobUrl);
+      }
+    };
+  }, [imageToCrop]);
+
+  const handleSaveCrop = async () => {
+    if (!imageToCrop || !crop || !imageBlobUrl) return;
+
+    const image = new Image();
+    image.src = imageBlobUrl;
+
+    image.onload = async () => {
+      const canvas = document.createElement('canvas');
+      const scaleX = image.naturalWidth / image.width;
+      const scaleY = image.naturalHeight / image.height;
+      canvas.width = crop.width;
+      canvas.height = crop.height;
+      const ctx = canvas.getContext('2d');
+
+      if (!ctx) {
+        toast.error('Could not get canvas context');
+        return;
+      }
+
+      ctx.drawImage(
+        image,
+        crop.x * scaleX,
+        crop.y * scaleY,
+        crop.width * scaleX,
+        crop.height * scaleY,
+        0,
+        0,
+        crop.width,
+        crop.height
+      );
+
+      canvas.toBlob(async (blob) => {
+        if (!blob) {
+          toast.error('Could not create blob from cropped image');
+          return;
+        }
+
+        try {
+          // Extract the original filename from the S3 URL to replace it
+          const urlParts = imageToCrop.s3Url.split('/');
+          const originalFileName = urlParts[urlParts.length - 1];
+          
+          // Upload with the same filename to replace the original image in S3
+          const newS3Url = await aiService.uploadImageToS3(blob, originalFileName);
+
+          setQuestion(prev => {
+            if (!prev.content?.question) return prev;
+            let newHtml = prev.content.question.html.replace(imageToCrop.s3Url, newS3Url);
+            newHtml = cleanCropButtonsFromHTML(newHtml); // Remove any crop buttons
+            const newRaw = prev.content.question.raw.replace(imageToCrop.s3Url, newS3Url);
+            return {
+              ...prev,
+              content: {
+                ...prev.content,
+                question: {
+                  ...prev.content.question,
+                  html: newHtml,
+                  raw: newRaw,
+                }
+              }
+            };
+          });
+
+          setImageToCrop(null);
+          setQuestionToCrop(null);
+          setCrop(undefined);
+          toast.success('Image cropped and updated successfully!');
+        } catch (error) {
+          console.error('Failed to upload cropped image:', error);
+          toast.error('Failed to upload cropped image');
+        }
+      }, 'image/png');
+    };
+
+    image.onerror = () => {
+      toast.error('Failed to load image for cropping.');
+    };
+  };
+
   const handleSave = async () => {
     // Validation
     if (!question.content?.question?.raw || !question.content?.question?.html) {
@@ -432,7 +576,9 @@ function QuestionEditorPageContent() {
 
       // For integer/numerical questions
       if (question.type === 'integer_based' && question.integerAnswer !== undefined) {
-        answer.key.numerical_value = question.integerAnswer;
+        answer.key.correct_value = question.integerAnswer;
+        answer.key.tolerance = 0.01;
+        answer.key.unit = null;
       }
 
       // Add solution if provided
@@ -985,11 +1131,21 @@ function QuestionEditorPageContent() {
         {/* Right Panel - Live Preview */}
         <div className="w-1/2 bg-gray-50 overflow-y-auto overflow-x-hidden">
           <div className="p-6 sticky top-0 bg-gray-50 border-b z-10">
-            <div className="flex items-center gap-2">
-              <Eye className="w-5 h-5 text-gray-600" />
-              <h2 className="text-lg font-semibold">Live Preview</h2>
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Eye className="w-5 h-5 text-gray-600" />
+                  <h2 className="text-lg font-semibold">Live Preview</h2>
+                </div>
+                <p className="text-sm text-gray-600">See how your question will appear to students</p>
+              </div>
+              {question.content?.question?.html?.includes('<img') && (
+                <Button variant="outline" size="sm" onClick={() => setQuestionToCrop(question)}>
+                  <CropIcon className="w-4 h-4 mr-2" />
+                  Crop Image
+                </Button>
+              )}
             </div>
-            <p className="text-sm text-gray-600">See how your question will appear to students</p>
           </div>
 
           <div className="p-6">
@@ -997,6 +1153,48 @@ function QuestionEditorPageContent() {
           </div>
         </div>
       </div>
+
+      {/* Image Selection Modal */}
+      {questionToCrop && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg max-w-3xl w-full">
+            <h2 className="text-xl font-bold mb-4">Select Image to Crop</h2>
+            <div className="grid grid-cols-3 gap-4">
+              {extractImagesFromHTML(questionToCrop.content?.question?.html || '').map((imageUrl, index) => (
+                <div
+                  key={index}
+                  className="cursor-pointer border-2 border-transparent hover:border-blue-500 rounded p-2 transition-all"
+                  onClick={() => {
+                    setImageToCrop({ s3Url: imageUrl, fileName: `image_${index}` } as ProcessedImage);
+                    setQuestionToCrop(null);
+                  }}
+                >
+                  <img src={imageUrl} alt={`Image ${index + 1}`} className="w-full h-auto rounded" crossOrigin="anonymous" />
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 flex justify-end">
+              <Button variant="outline" onClick={() => setQuestionToCrop(null)}>Cancel</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cropping Modal */}
+      {imageToCrop && imageBlobUrl && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg max-w-4xl w-full">
+            <h2 className="text-xl font-bold mb-4">Crop Image</h2>
+            <ReactCrop crop={crop} onChange={(c) => setCrop(c)}>
+              <img src={imageBlobUrl} alt="Cropping preview" />
+            </ReactCrop>
+            <div className="mt-4 flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => { setImageToCrop(null); setCrop(undefined); }}>Cancel</Button>
+              <Button onClick={handleSaveCrop} disabled={!crop}>Save Crop</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

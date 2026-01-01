@@ -9,30 +9,62 @@ interface RichContentRendererProps {
   content: RichContent;
   className?: string;
   enableMath?: boolean;
+  onCropImage?: (imageUrl: string) => void;
 }
 
 export function RichContentRenderer({ 
   content, 
   className = "",
-  enableMath = true 
+  enableMath = true,
+  onCropImage
 }: RichContentRendererProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const lastHtmlRef = useRef<string>('');
 
   useEffect(() => {
-    if (!containerRef.current || !content.html) return;
-    
-    // Set the HTML content
-    containerRef.current.innerHTML = content.html;
-    
+    const container = containerRef.current;
+    if (!container || !content.html) return;
+
+    // Only update innerHTML if the HTML actually changed
+    if (lastHtmlRef.current !== content.html) {
+      container.innerHTML = content.html;
+      lastHtmlRef.current = content.html;
+    }
+
+    // Event delegation for crop buttons
+    const handleClick = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (target.classList.contains('crop-button')) {
+        const imageUrl = target.getAttribute('data-image-url');
+        if (imageUrl && onCropImage) {
+          onCropImage(imageUrl);
+        }
+      }
+    };
+    container.addEventListener('click', handleClick);
+
+    // Ensure br tags are properly displayed with spacing
+    const brTags = container.querySelectorAll('br');
+    brTags.forEach(br => {
+      br.style.display = 'block';
+      br.style.content = '""';
+      br.style.marginBottom = '0.5em';
+    });
+
     // Render math equations if enabled
     if (enableMath) {
+      // Use requestAnimationFrame to ensure DOM is ready
       requestAnimationFrame(() => {
-        if (containerRef.current) {
-          renderMathEquations(containerRef.current);
+        if (container) {
+          renderMathEquations(container);
         }
       });
     }
-  }, [content.html, enableMath]);
+
+    return () => {
+      container.removeEventListener('click', handleClick);
+    };
+  }, [content.html, enableMath, onCropImage]);
 
   const renderMathEquations = (container: HTMLElement) => {
     // Render block equations ($$...$$)
@@ -83,6 +115,7 @@ export function RichContentRenderer({
     );
   }
 
+
   return (
     <div 
       ref={containerRef}
@@ -104,6 +137,8 @@ export function RichContentRenderer({
         '--prose-pre-bg': 'rgb(17 24 39)',
         '--prose-th-borders': 'rgb(209 213 219)',
         '--prose-td-borders': 'rgb(229 231 235)',
+        whiteSpace: 'pre-wrap', // Preserve whitespace and line breaks
+        lineHeight: '1.6',
       } as React.CSSProperties}
     />
   );

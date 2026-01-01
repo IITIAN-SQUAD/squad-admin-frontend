@@ -68,6 +68,7 @@ export default function QuestionOnboardingPage() {
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>("all");
   const [selectedTopicId, setSelectedTopicId] = useState<string>("all");
   const [selectedChapterId, setSelectedChapterId] = useState<string>("all");
+  const [selectedStatuses, setSelectedStatuses] = useState<QuestionStatus[]>(['DRAFT', 'UNDER_REVIEW', 'PUBLISHED']); // Default: all except ARCHIVED
   
   // Pagination
   const [currentPage, setCurrentPage] = useState(0); // API uses 0-based indexing
@@ -126,7 +127,7 @@ export default function QuestionOnboardingPage() {
   // Fetch questions when filters change
   useEffect(() => {
     fetchQuestions();
-  }, [currentPage, searchTerm, selectedExamId, selectedPaperId, selectedSubjectId, selectedChapterId, selectedTopicId]);
+  }, [currentPage, searchTerm, selectedExamId, selectedPaperId, selectedSubjectId, selectedChapterId, selectedTopicId, selectedStatuses]);
 
   // Fetch papers when exam changes
   useEffect(() => {
@@ -163,7 +164,7 @@ export default function QuestionOnboardingPage() {
         size: pageSize,
         sort_by: 'createdOn',
         sort_direction: 'DESC',
-        statuses: ['DRAFT', 'UNDER_REVIEW'],
+        statuses: selectedStatuses.length > 0 ? selectedStatuses : undefined,
         exam_id: selectedExamId !== 'all' ? selectedExamId : undefined,
         paper_id: selectedPaperId !== 'all' ? selectedPaperId : undefined,
         subject_id: selectedSubjectId !== 'all' ? selectedSubjectId : undefined,
@@ -227,7 +228,7 @@ export default function QuestionOnboardingPage() {
   // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(0);
-  }, [searchTerm, selectedExamId, selectedPaperId, selectedSubjectId, selectedTopicId, selectedChapterId]);
+  }, [searchTerm, selectedExamId, selectedPaperId, selectedSubjectId, selectedTopicId, selectedChapterId, selectedStatuses]);
 
   const handleCreateQuestion = () => {
     if (!newQuestionData.examId) {
@@ -550,7 +551,6 @@ export default function QuestionOnboardingPage() {
                     setSelectedChapterId("all");
                     setSelectedTopicId("all");
                   }}
-                  disabled={selectedExamId === "all"}
                 >
                   <SelectTrigger id="filterSubject" className="mt-1">
                     <SelectValue />
@@ -608,6 +608,36 @@ export default function QuestionOnboardingPage() {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            {/* Third row - Status filter */}
+            <div className="flex gap-4 items-end">
+              <div className="w-56">
+                <Label htmlFor="filterStatus">Filter by Status</Label>
+                <Select 
+                  value={selectedStatuses.length === 1 ? selectedStatuses[0] : 'multiple'} 
+                  onValueChange={(value) => {
+                    if (value === 'all') {
+                      setSelectedStatuses(['DRAFT', 'UNDER_REVIEW', 'PUBLISHED']);
+                    } else if (value === 'multiple') {
+                      // Keep current selection
+                    } else {
+                      setSelectedStatuses([value as QuestionStatus]);
+                    }
+                  }}
+                >
+                  <SelectTrigger id="filterStatus" className="mt-1">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All (except Archived)</SelectItem>
+                    <SelectItem value="DRAFT">Draft</SelectItem>
+                    <SelectItem value="UNDER_REVIEW">Under Review</SelectItem>
+                    <SelectItem value="PUBLISHED">Published</SelectItem>
+                    <SelectItem value="ARCHIVED">Archived</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <Button
                 variant="outline"
                 onClick={() => {
@@ -617,6 +647,7 @@ export default function QuestionOnboardingPage() {
                   setSelectedSubjectId("all");
                   setSelectedChapterId("all");
                   setSelectedTopicId("all");
+                  setSelectedStatuses(['DRAFT', 'UNDER_REVIEW', 'PUBLISHED']);
                 }}
                 className="whitespace-nowrap"
               >
