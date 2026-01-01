@@ -38,7 +38,7 @@ import { Card } from "@/components/ui/card";
 import examService from '@/src/services/exam.service';
 import paperService from '@/src/services/paper.service';
 import hierarchyService from '@/src/services/hierarchy.service';
-import questionService, { QuestionResponse, QuestionStatus, QuestionStatistics } from '@/src/services/question.service';
+import questionService, { QuestionResponse, QuestionStatus, QuestionStatistics, QuestionDifficulty, AnswerType } from '@/src/services/question.service';
 import { toast } from 'sonner';
 
 export default function QuestionOnboardingPage() {
@@ -68,9 +68,9 @@ export default function QuestionOnboardingPage() {
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>("all");
   const [selectedTopicId, setSelectedTopicId] = useState<string>("all");
   const [selectedChapterId, setSelectedChapterId] = useState<string>("all");
-  const [selectedStatuses, setSelectedStatuses] = useState<string[]>(["DRAFT", "UNDER_REVIEW"]);
-  const [selectedDifficulties, setSelectedDifficulties] = useState<string[]>([]);
-  const [selectedAnswerTypes, setSelectedAnswerTypes] = useState<string[]>([]);
+  const [selectedStatuses, setSelectedStatuses] = useState<QuestionStatus[]>(["DRAFT", "UNDER_REVIEW"]);
+  const [selectedDifficulties, setSelectedDifficulties] = useState<QuestionDifficulty[]>([]);
+  const [selectedAnswerTypes, setSelectedAnswerTypes] = useState<AnswerType[]>([]);
   
   // Pagination
   const [currentPage, setCurrentPage] = useState(0); // API uses 0-based indexing
