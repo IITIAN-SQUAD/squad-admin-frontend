@@ -18,12 +18,12 @@ export interface ExtractedQuestion {
   }>;
   correctAnswer?: string;
   questionType: 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE' | 'INTEGER' | 'PARAGRAPH';
-  difficulty: number;
+  difficulty: number; // 1-10 scale: 1-3 easy, 4-7 medium, 8-10 hard
   positiveMarks: number;
   negativeMarks: number;
   durationSeconds: number;
   hint?: string;
-  solution?: string;
+  solution?: string; // Detailed step-by-step solution for students
   images: Array<{
     base64: string;
     location: 'question' | 'option' | 'hint' | 'solution';
@@ -35,6 +35,8 @@ export interface ExtractedQuestion {
   subjectName?: string;
   chapterName?: string;
   topicName?: string;
+  pageNumber?: number; // Track which page this question came from
+  contextFromPreviousPage?: string; // For multi-page questions
 }
 
 export interface QuestionExtractionResult {
@@ -48,7 +50,14 @@ export interface QuestionExtractionResult {
     totalQuestions: number;
     processingTime: number;
     provider: LLMProvider;
+    totalPages?: number;
+    currentPage?: number;
   };
+}
+
+export interface PageProcessingCallback {
+  onPageProcessed: (pageNumber: number, questions: ExtractedQuestion[]) => void;
+  onProgress: (current: number, total: number) => void;
 }
 
 class AIService {
@@ -86,6 +95,8 @@ class AIService {
       defaultPositiveMarks?: number;
       defaultNegativeMarks?: number;
       defaultDuration?: number | null;
+      pageNumber?: number;
+      previousPageContext?: string;
     }
   ): Promise<QuestionExtractionResult> {
     if (!this.config) {
@@ -101,6 +112,114 @@ class AIService {
     }
   }
 
+  async extractQuestionsFromPDF(
+    pdfFile: File,
+    options?: {
+      includeHints?: boolean;
+      includeSolutions?: boolean;
+      solutionPdfBase64?: string;
+      defaultPositiveMarks?: number;
+      defaultNegativeMarks?: number;
+      defaultDuration?: number | null;
+      onPageProcessed?: (pageNumber: number, questions: ExtractedQuestion[]) => void;
+      onProgress?: (current: number, total: number) => void;
+    }
+  ): Promise<QuestionExtractionResult> {
+    if (!this.config) {
+      throw new Error('AI service not configured. Please set up LLM provider.');
+    }
+
+    const allQuestions: ExtractedQuestion[] = [];
+    let previousPageContext = '';
+    const startTime = Date.now();
+
+    // Convert PDF to images (page by page)
+    const pdfPages = await this.convertPDFToImages(pdfFile);
+    const totalPages = pdfPages.length;
+
+    for (let i = 0; i < pdfPages.length; i++) {
+      const pageNumber = i + 1;
+      options?.onProgress?.(pageNumber, totalPages);
+
+      try {
+        const result = await this.extractQuestionsFromImage(pdfPages[i], {
+          ...options,
+          pageNumber,
+          previousPageContext
+        });
+
+        // Add page number to each question
+        const questionsWithPage = result.questions.map(q => ({
+          ...q,
+          pageNumber,
+          contextFromPreviousPage: previousPageContext || undefined
+        }));
+
+        allQuestions.push(...questionsWithPage);
+        
+        // Update context for next page (last question text + any incomplete info)
+        if (questionsWithPage.length > 0) {
+          const lastQuestion = questionsWithPage[questionsWithPage.length - 1];
+          previousPageContext = `Previous page ended with: ${lastQuestion.questionText.substring(0, 200)}...`;
+        }
+
+        // Notify callback with processed questions
+        options?.onPageProcessed?.(pageNumber, questionsWithPage);
+
+      } catch (error) {
+        console.error(`Error processing page ${pageNumber}:`, error);
+        // Continue with next page
+      }
+    }
+
+    return {
+      questions: allQuestions,
+      metadata: {
+        totalQuestions: allQuestions.length,
+        processingTime: Date.now() - startTime,
+        provider: this.config.provider,
+        totalPages,
+        currentPage: totalPages
+      }
+    };
+  }
+
+  private async convertPDFToImages(pdfFile: File): Promise<string[]> {
+    // Use pdf.js to convert PDF pages to images
+    const pdfjsLib = await import('pdfjs-dist');
+    
+    // Use local worker file from node_modules instead of CDN
+    pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+      'pdfjs-dist/build/pdf.worker.min.mjs',
+      import.meta.url
+    ).toString();
+
+    const arrayBuffer = await pdfFile.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    const images: string[] = [];
+
+    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+      const page = await pdf.getPage(pageNum);
+      const viewport = page.getViewport({ scale: 2.0 }); // Higher scale for better quality
+      
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      canvas.height = viewport.height;
+      canvas.width = viewport.width;
+
+      if (context) {
+        await page.render({
+          canvasContext: context,
+          viewport: viewport
+        }).promise;
+
+        images.push(canvas.toDataURL('image/jpeg', 0.95));
+      }
+    }
+
+    return images;
+  }
+
   private async extractWithGemini(
     imageBase64: string,
     options?: {
@@ -110,6 +229,8 @@ class AIService {
       defaultPositiveMarks?: number;
       defaultNegativeMarks?: number;
       defaultDuration?: number | null;
+      pageNumber?: number;
+      previousPageContext?: string;
     }
   ): Promise<QuestionExtractionResult> {
     const startTime = Date.now();
@@ -265,6 +386,8 @@ class AIService {
       defaultPositiveMarks?: number;
       defaultNegativeMarks?: number;
       defaultDuration?: number | null;
+      pageNumber?: number;
+      previousPageContext?: string;
     }
   ): Promise<QuestionExtractionResult> {
     const startTime = Date.now();
@@ -307,8 +430,7 @@ class AIService {
     const response = await this.openai.chat.completions.create({
       model: this.config?.model || 'gpt-4o-mini',
       messages,
-      max_tokens: 16000,
-      temperature: 0.1,
+      max_completion_tokens: 32000,
       response_format: { type: 'json_object' }
     });
 
@@ -378,28 +500,94 @@ class AIService {
     includeHints?: boolean;
     includeSolutions?: boolean;
     solutionPdfBase64?: string;
+    pageNumber?: number;
+    previousPageContext?: string;
   }): string {
+    const contextNote = options?.previousPageContext 
+      ? `\n\nCONTEXT FROM PREVIOUS PAGE:\n${options.previousPageContext}\nIf a question on this page continues from the previous page, use this context.`
+      : '';
+
     return `You are an expert question extraction AI for competitive exams. Analyze the provided image(s) and extract ALL questions with complete metadata.
+${contextNote}
 
 CRITICAL INSTRUCTIONS:
 1. Extract ALL questions from the image(s) - these are PREVIOUS YEAR QUESTIONS
-2. Identify question type: SINGLE_CHOICE, MULTIPLE_CHOICE, INTEGER, or PARAGRAPH
-3. Extract all options with unique IDs (opt1, opt2, etc.) and labels (A, B, C, D)
-4. Identify correct answer(s) from answer keys or solutions
-5. Convert ALL equations to LaTeX: x^2, \\frac{a}{b}, \\sqrt{x}, etc.
-6. DO NOT generate images - only reference existing images from the PDF
-7. For complex equations that can't be converted to LaTeX, note the image location
-8. Read section instructions for: positive marks, negative marks, duration per question
-9. Estimate difficulty 1-10 based on concept complexity
+2. **REMOVE question numbers** (Q1, Q2, Q71, etc.) from the beginning of question text
+3. Identify question type: SINGLE_CHOICE, MULTIPLE_CHOICE, NUMERICAL, or PARAGRAPH
+4. Extract all options with unique IDs (opt1, opt2, etc.) and labels (A, B, C, D)
+5. Identify correct answer(s) from answer keys or solutions
+6. Convert ALL equations to LaTeX: x^2, \\frac{a}{b}, \\sqrt{x}, etc.
+7. DO NOT generate images - only reference existing images from the PDF
+8. For complex equations that can't be converted to LaTeX, note the image location
+9. Read section instructions for: positive marks, negative marks, duration per question
+9. **DIFFICULTY RATING (1-10 scale):**
+   - 1-3: EASY - Basic recall, simple calculations, direct application
+   - 4-7: MEDIUM - Multi-step problems, concept application, moderate complexity
+   - 8-10: HARD - Advanced concepts, complex multi-step, requires deep understanding
+   Analyze the question's conceptual depth, calculation complexity, and required knowledge to assign accurate difficulty.
 10. Extract subject/chapter/topic from question content or headers
 11. Generate relevant tags (e.g., "physics", "mechanics", "kinematics")
 ${options?.includeHints 
-  ? '12. Generate SHORT, CONCISE hints (1 sentence max, key concept only)' 
+  ? '12. Generate SHORT, CONCISE hints (1-2 sentences max, key concept or approach only)' 
   : '12. DO NOT include "hint" field - leave it empty or omit it'}
 ${options?.includeSolutions 
-  ? '13. Generate BRIEF solutions (2-3 sentences max, essential steps only, NO detailed explanations)' 
+  ? `13. **SOLUTION GENERATION - KEY CONCEPTS + DETAILED STEPS:**
+   
+   **SOLUTION STRUCTURE - MANDATORY FORMAT:**
+   
+   **Part 1: KEY CONCEPTS (Start with this)**
+   - List 2-4 key concepts/principles needed to solve this problem
+   - Explain each concept in 1-2 simple sentences
+   - This helps students understand the foundation and solve similar problems
+   - Format: "**Key Concept 1:** [Concept Name]\\n[Brief explanation]\\n\\n**Key Concept 2:** ..."
+   
+   **Part 2: DETAILED SOLUTION**
+   ${options?.solutionPdfBase64 
+     ? `- SOLUTION PDF PROVIDED: Extract EVERY step from the provided solution
+   - Use it as PRIMARY REFERENCE for correctness
+   - VERIFY all calculations match exactly`
+     : `- NO SOLUTION PROVIDED: Solve step-by-step with EXTREME detail
+   - VERIFY final answer matches the correct option`}
+   
+   **FORMATTING RULES - CRITICAL:**
+   - Use \\n\\n for paragraph breaks (double line break)
+   - Use \\n for single line breaks
+   - Start each major section on a new line
+   - Add blank lines between steps for readability
+   - Example: "Step 1: [Title]\\n[Explanation]\\n\\nStep 2: [Title]\\n[Explanation]"
+   
+   **DETAIL REQUIREMENTS:**
+   - Assume student is a complete beginner
+   - Show EVERY calculation: $5 + 3 = 8$, then $8 \\times 2 = 16$
+   - Explain EVERY formula before using it
+   - Define EVERY variable with units
+   - Show intermediate results after EACH operation
+   - NEVER skip steps or write "after simplification" without showing it
+   
+   **MANDATORY STRUCTURE:**
+   
+   **Key Concepts:**\\n
+   [List key concepts here with explanations]\\n\\n
+   **Given:**\\n
+   - [List all given information with units]\\n
+   - Find: [What needs to be found]\\n\\n
+   **Step 1: [Step Title]**\\n
+   [Explanation of what and why]\\n
+   [Formula if applicable]\\n
+   [Calculation with every operation shown]\\n
+   [Result with units]\\n\\n
+   **Step 2: [Step Title]**\\n
+   [Continue same format]\\n\\n
+   **Final Answer:**\\n
+   [Numerical value with units and option reference if MCQ]
+   
+   **EXAMPLE FORMAT:**
+   
+   "**Key Concepts:**\\n\\n**Key Concept 1: Newton's Second Law**\\nForce is directly proportional to mass and acceleration. When an object accelerates, the force acting on it equals mass times acceleration.\\n\\n**Key Concept 2: Units in Physics**\\nForce is measured in Newtons (N), which equals kg⋅m/s². Always include units in calculations to verify correctness.\\n\\n**Given:**\\n- Mass of object: $m = 5$ kg\\n- Acceleration: $a = 3$ m/s²\\n- Find: Force $F$\\n\\n**Step 1: Identify the applicable formula**\\nWe use Newton's Second Law: $F = m \\times a$\\nThis relates force directly to mass and acceleration.\\n\\n**Step 2: Substitute the values**\\n$F = 5 \\times 3$\\nWe multiply the mass by the acceleration.\\n\\n**Step 3: Calculate the result**\\n$5 \\times 3 = 15$\\n\\n**Step 4: Add units**\\n$F = 15$ N (Newtons)\\n\\n**Final Answer:**\\nThe force acting on the object is **15 N** (Option C)"
+   
+   **REMEMBER: Key concepts help students learn patterns. Proper formatting makes solutions beautiful and easy to understand.**` 
   : '13. DO NOT include "solution" field - leave it empty or omit it'}
-${options?.solutionPdfBase64 ? '14. Match solutions from provided PDF (may be different order)' : ''}
+${options?.solutionPdfBase64 ? '\n14. **CRITICAL: Solution PDF is provided - Use it as your PRIMARY reference for solution accuracy. Match the approach and verify all steps.**' : ''}
 
 OUTPUT FORMAT (JSON):
 {
@@ -426,8 +614,8 @@ OUTPUT FORMAT (JSON):
       "subjectName": "Geography",
       "chapterName": "World Capitals",
       "topicName": "European Capitals",
-      "hint": "Think about the Eiffel Tower",
-      "solution": "Paris is the capital of France.",
+      "hint": "Think about the Eiffel Tower and French culture.",
+      "solution": "Given: Question asks for capital of France\\n\\nStep 1: Identify key landmarks\\nFrance is known for the Eiffel Tower, which is located in Paris.\\n\\nStep 2: Recall geographical knowledge\\nParis is the largest city and capital of France.\\n\\nFinal Answer: Paris (Option C)",
       "images": [
         {
           "base64": "data:image/jpeg;base64,...",
@@ -439,7 +627,20 @@ OUTPUT FORMAT (JSON):
   ]
 }
 
-LATEX RULES:
+LATEX FORMATTING RULES - ABSOLUTELY CRITICAL - NO EXCEPTIONS:
+- **EVERY mathematical expression MUST be wrapped in $ delimiters**
+- **NEVER write raw LaTeX without $ delimiters**
+- **NEVER write expressions like \\(x\\) or \\[equation\\] - ALWAYS use $ delimiters**
+- Inline equations: Use single $ like: $x^2 + y^2 = r^2$
+- Block equations: Use double $$ like: $$\frac{a}{b} = c$$
+- Variables: $x$, $y$, $P(1, 0, 3)$, $\alpha$, $\beta$, $\gamma$
+- Example question text: "If the image of point $P(1, 0, 3)$ is $Q(\alpha, \beta, \gamma)$, then $\alpha + \beta + \gamma$ equals:"
+- Example option text: "A. $x = -2$ or $x = -3$"
+- Example solution: "Step 1: Factor the equation $(x + 2)(x + 3) = 0$"
+- **WRONG:** "If the image of the point \\(P(1, 0, 3)\\)" ❌
+- **CORRECT:** "If the image of the point $P(1, 0, 3)$" ✅
+
+LATEX SYNTAX:
 - Superscripts: x^2, x^{10}
 - Subscripts: x_1, x_{10}
 - Fractions: \\frac{a}{b}
@@ -451,14 +652,14 @@ LATEX RULES:
 - Matrices: \\begin{bmatrix} a & b \\\\ c & d \\end{bmatrix}
 
 IMPORTANT RULES:
-- Keep hints ULTRA-BRIEF (1 sentence, key concept only)
-- Keep solutions CONCISE (3-5 key steps max, essential steps only)
-- Format solutions with numbered steps for readability (e.g., "Step 1: ... Step 2: ...")
+- Keep hints BRIEF (1-2 sentences, key concept or approach)
+- Make solutions DETAILED and EDUCATIONAL with clear step-by-step explanations
+- Format solutions with "Given:", "Step 1:", "Step 2:", etc., and "Final Answer:"
+- Use \\n for line breaks in solutions to make them readable
 - DO NOT generate or describe images - only reference existing ones
-- Focus on data extraction, not explanations
 - Use proper JSON escaping for LaTeX backslashes (use \\\\ for \\)
-- Write solutions as single-line strings with step markers for formatting
 - Avoid special characters that break JSON parsing
+- Difficulty rating must accurately reflect question complexity (1-10 scale)
 
 Return ONLY valid JSON with no markdown code blocks, no additional text.`;
   }
@@ -533,6 +734,10 @@ Return ONLY valid JSON with no markdown code blocks, no additional text.`;
     topicId: string;
   }> {
     try {
+      if (!this.config) {
+        throw new Error('AI service not configured. Please configure before using hierarchy matching.');
+      }
+
       // Step 1: Fetch all subjects
       const subjectsResponse = await fetch('/api/backend/v1/admin/hierarchy/subjects', {
         headers: {
@@ -541,14 +746,16 @@ Return ONLY valid JSON with no markdown code blocks, no additional text.`;
       });
       const subjects = await subjectsResponse.json();
 
-      // Step 2: Match best subject using AI
+      // Step 2: Match best subject using configured LLM
       let bestSubject = subjects[0];
-      if (subjectName && this.genAI) {
-        const model = this.genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
-        const prompt = `Given this question: "${questionText}" and subject hint: "${subjectName}", which of these subjects is the best match? Return ONLY the subject name, nothing else.\n\nSubjects: ${subjects.map((s: any) => s.name).join(', ')}`;
-        const result = await model.generateContent(prompt);
-        const matchedName = result.response.text().trim();
-        bestSubject = subjects.find((s: any) => s.name.toLowerCase().includes(matchedName.toLowerCase())) || subjects[0];
+      if (subjectName && subjects.length > 0) {
+        const prompt = `Given this question: "${questionText.substring(0, 300)}" and subject hint: "${subjectName}", which of these subjects is the best match? Return ONLY the exact subject name from the list, nothing else.\n\nSubjects: ${subjects.map((s: any) => s.name).join(', ')}`;
+        const matchedName = await this.callLLM(prompt);
+        bestSubject = subjects.find((s: any) => 
+          s.name.toLowerCase() === matchedName.toLowerCase() ||
+          s.name.toLowerCase().includes(matchedName.toLowerCase()) ||
+          matchedName.toLowerCase().includes(s.name.toLowerCase())
+        ) || subjects[0];
       }
 
       // Step 3: Fetch chapters for the matched subject
@@ -559,14 +766,16 @@ Return ONLY valid JSON with no markdown code blocks, no additional text.`;
       });
       const chapters = await chaptersResponse.json();
 
-      // Step 4: Match best chapter
+      // Step 4: Match best chapter using configured LLM
       let bestChapter = chapters[0];
-      if (chapterName && this.genAI) {
-        const model = this.genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
-        const prompt = `Given this question: "${questionText}" and chapter hint: "${chapterName}", which of these chapters is the best match? Return ONLY the chapter name, nothing else.\n\nChapters: ${chapters.map((c: any) => c.name).join(', ')}`;
-        const result = await model.generateContent(prompt);
-        const matchedName = result.response.text().trim();
-        bestChapter = chapters.find((c: any) => c.name.toLowerCase().includes(matchedName.toLowerCase())) || chapters[0];
+      if (chapterName && chapters.length > 0) {
+        const prompt = `Given this question: "${questionText.substring(0, 300)}" and chapter hint: "${chapterName}", which of these chapters is the best match? Return ONLY the exact chapter name from the list, nothing else.\n\nChapters: ${chapters.map((c: any) => c.name).join(', ')}`;
+        const matchedName = await this.callLLM(prompt);
+        bestChapter = chapters.find((c: any) => 
+          c.name.toLowerCase() === matchedName.toLowerCase() ||
+          c.name.toLowerCase().includes(matchedName.toLowerCase()) ||
+          matchedName.toLowerCase().includes(c.name.toLowerCase())
+        ) || chapters[0];
       }
 
       // Step 5: Fetch topics for the matched chapter
@@ -577,14 +786,16 @@ Return ONLY valid JSON with no markdown code blocks, no additional text.`;
       });
       const topics = await topicsResponse.json();
 
-      // Step 6: Match best topic
+      // Step 6: Match best topic using configured LLM
       let bestTopic = topics[0];
-      if (topicName && this.genAI) {
-        const model = this.genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
-        const prompt = `Given this question: "${questionText}" and topic hint: "${topicName}", which of these topics is the best match? Return ONLY the topic name, nothing else.\n\nTopics: ${topics.map((t: any) => t.name).join(', ')}`;
-        const result = await model.generateContent(prompt);
-        const matchedName = result.response.text().trim();
-        bestTopic = topics.find((t: any) => t.name.toLowerCase().includes(matchedName.toLowerCase())) || topics[0];
+      if (topicName && topics.length > 0) {
+        const prompt = `Given this question: "${questionText.substring(0, 300)}" and topic hint: "${topicName}", which of these topics is the best match? Return ONLY the exact topic name from the list, nothing else.\n\nTopics: ${topics.map((t: any) => t.name).join(', ')}`;
+        const matchedName = await this.callLLM(prompt);
+        bestTopic = topics.find((t: any) => 
+          t.name.toLowerCase() === matchedName.toLowerCase() ||
+          t.name.toLowerCase().includes(matchedName.toLowerCase()) ||
+          matchedName.toLowerCase().includes(t.name.toLowerCase())
+        ) || topics[0];
       }
 
       return {
@@ -595,6 +806,31 @@ Return ONLY valid JSON with no markdown code blocks, no additional text.`;
     } catch (error) {
       console.error('Hierarchy matching error:', error);
       throw error;
+    }
+  }
+
+  private async callLLM(prompt: string): Promise<string> {
+    if (!this.config) {
+      throw new Error('AI service not configured');
+    }
+
+    if (this.config.provider === 'gemini') {
+      if (!this.genAI) {
+        throw new Error('Gemini AI not initialized');
+      }
+      const model = this.genAI.getGenerativeModel({ model: this.config.model || 'gemini-2.5-flash' });
+      const result = await model.generateContent(prompt);
+      return result.response.text().trim();
+    } else {
+      if (!this.openai) {
+        throw new Error('OpenAI not initialized');
+      }
+      const response = await this.openai.chat.completions.create({
+        model: this.config.model || 'gpt-4o-mini',
+        messages: [{ role: 'user', content: prompt }],
+        max_completion_tokens: 100
+      });
+      return response.choices[0].message.content?.trim() || '';
     }
   }
 }

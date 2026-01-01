@@ -5,7 +5,7 @@ import PageHeader from "@/src/components/page/page-header";
 import PageTitle from "@/src/components/page/page-title";
 import PageWrapper from "@/src/components/page/page-wrapper";
 import { Button } from "@/components/ui/button";
-import { Plus, Search, Edit, Trash2, FileQuestion, BookOpen, CheckCircle2, ListTodo, Calculator, TrendingUp, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Search, Edit, Trash2, FileQuestion, BookOpen, CheckCircle2, ListTodo, Calculator, TrendingUp, ChevronLeft, ChevronRight, Eye } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -68,6 +68,9 @@ export default function QuestionOnboardingPage() {
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>("all");
   const [selectedTopicId, setSelectedTopicId] = useState<string>("all");
   const [selectedChapterId, setSelectedChapterId] = useState<string>("all");
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>(["DRAFT", "UNDER_REVIEW"]);
+  const [selectedDifficulties, setSelectedDifficulties] = useState<string[]>([]);
+  const [selectedAnswerTypes, setSelectedAnswerTypes] = useState<string[]>([]);
   
   // Pagination
   const [currentPage, setCurrentPage] = useState(0); // API uses 0-based indexing
@@ -126,7 +129,7 @@ export default function QuestionOnboardingPage() {
   // Fetch questions when filters change
   useEffect(() => {
     fetchQuestions();
-  }, [currentPage, searchTerm, selectedExamId, selectedPaperId, selectedSubjectId, selectedChapterId, selectedTopicId]);
+  }, [currentPage, searchTerm, selectedExamId, selectedPaperId, selectedSubjectId, selectedChapterId, selectedTopicId, selectedStatuses, selectedDifficulties, selectedAnswerTypes]);
 
   // Fetch papers when exam changes
   useEffect(() => {
@@ -163,7 +166,9 @@ export default function QuestionOnboardingPage() {
         size: pageSize,
         sort_by: 'createdOn',
         sort_direction: 'DESC',
-        statuses: ['DRAFT', 'UNDER_REVIEW'],
+        statuses: selectedStatuses.length > 0 ? selectedStatuses : undefined,
+        difficulties: selectedDifficulties.length > 0 ? selectedDifficulties : undefined,
+        answer_types: selectedAnswerTypes.length > 0 ? selectedAnswerTypes : undefined,
         exam_id: selectedExamId !== 'all' ? selectedExamId : undefined,
         paper_id: selectedPaperId !== 'all' ? selectedPaperId : undefined,
         subject_id: selectedSubjectId !== 'all' ? selectedSubjectId : undefined,
@@ -227,7 +232,7 @@ export default function QuestionOnboardingPage() {
   // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(0);
-  }, [searchTerm, selectedExamId, selectedPaperId, selectedSubjectId, selectedTopicId, selectedChapterId]);
+  }, [searchTerm, selectedExamId, selectedPaperId, selectedSubjectId, selectedTopicId, selectedChapterId, selectedStatuses, selectedDifficulties, selectedAnswerTypes]);
 
   const handleCreateQuestion = () => {
     if (!newQuestionData.examId) {
@@ -550,7 +555,6 @@ export default function QuestionOnboardingPage() {
                     setSelectedChapterId("all");
                     setSelectedTopicId("all");
                   }}
-                  disabled={selectedExamId === "all"}
                 >
                   <SelectTrigger id="filterSubject" className="mt-1">
                     <SelectValue />
@@ -608,6 +612,80 @@ export default function QuestionOnboardingPage() {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            {/* Third row of filters - Status, Difficulty, Answer Type */}
+            <div className="flex gap-4 items-end">
+              <div className="w-56">
+                <Label htmlFor="filterStatus">Filter by Status</Label>
+                <Select 
+                  value={selectedStatuses.join(',')} 
+                  onValueChange={(value) => {
+                    setSelectedStatuses(value ? value.split(',') : []);
+                  }}
+                >
+                  <SelectTrigger id="filterStatus" className="mt-1">
+                    <SelectValue placeholder="Select statuses" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="DRAFT,UNDER_REVIEW">Draft + Under Review</SelectItem>
+                    <SelectItem value="DRAFT">Draft Only</SelectItem>
+                    <SelectItem value="UNDER_REVIEW">Under Review Only</SelectItem>
+                    <SelectItem value="PUBLISHED">Published Only</SelectItem>
+                    <SelectItem value="ARCHIVED">Archived Only</SelectItem>
+                    <SelectItem value="DRAFT,UNDER_REVIEW,PUBLISHED,ARCHIVED">All Statuses</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="w-56">
+                <Label htmlFor="filterDifficulty">Filter by Difficulty</Label>
+                <Select 
+                  value={selectedDifficulties.length === 0 ? 'all' : selectedDifficulties.join(',')} 
+                  onValueChange={(value) => {
+                    if (value === 'all') {
+                      setSelectedDifficulties([]);
+                    } else {
+                      setSelectedDifficulties(value.split(',').filter(Boolean));
+                    }
+                  }}
+                >
+                  <SelectTrigger id="filterDifficulty" className="mt-1">
+                    <SelectValue placeholder="All Difficulties" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Difficulties</SelectItem>
+                    <SelectItem value="EASY">Easy Only</SelectItem>
+                    <SelectItem value="MEDIUM">Medium Only</SelectItem>
+                    <SelectItem value="HARD">Hard Only</SelectItem>
+                    <SelectItem value="EASY,MEDIUM">Easy + Medium</SelectItem>
+                    <SelectItem value="MEDIUM,HARD">Medium + Hard</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="w-56">
+                <Label htmlFor="filterAnswerType">Filter by Answer Type</Label>
+                <Select 
+                  value={selectedAnswerTypes.length === 0 ? 'all' : selectedAnswerTypes.join(',')} 
+                  onValueChange={(value) => {
+                    if (value === 'all') {
+                      setSelectedAnswerTypes([]);
+                    } else {
+                      setSelectedAnswerTypes(value.split(',').filter(Boolean));
+                    }
+                  }}
+                >
+                  <SelectTrigger id="filterAnswerType" className="mt-1">
+                    <SelectValue placeholder="All Types" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Types</SelectItem>
+                    <SelectItem value="SINGLE_CHOICE">Single Choice</SelectItem>
+                    <SelectItem value="MULTIPLE_CHOICE">Multiple Choice</SelectItem>
+                    <SelectItem value="NUMERICAL">Numerical</SelectItem>
+                    <SelectItem value="PARAGRAPH">Paragraph</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <Button
                 variant="outline"
                 onClick={() => {
@@ -617,6 +695,9 @@ export default function QuestionOnboardingPage() {
                   setSelectedSubjectId("all");
                   setSelectedChapterId("all");
                   setSelectedTopicId("all");
+                  setSelectedStatuses(["DRAFT", "UNDER_REVIEW"]);
+                  setSelectedDifficulties([]);
+                  setSelectedAnswerTypes([]);
                 }}
                 className="whitespace-nowrap"
               >
@@ -744,6 +825,14 @@ export default function QuestionOnboardingPage() {
                           <Button
                             variant="outline"
                             size="sm"
+                            onClick={() => router.push(`/question-view/${question.id}`)}
+                            title="View question"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
                             onClick={() => {
                               const queryParams = new URLSearchParams({
                                 examId: question.exam_id || "",
@@ -755,6 +844,7 @@ export default function QuestionOnboardingPage() {
                               });
                               router.push(`/question-onboarding/editor?${queryParams.toString()}`);
                             }}
+                            title="Edit question"
                           >
                             <Edit className="w-4 h-4" />
                           </Button>
@@ -762,6 +852,7 @@ export default function QuestionOnboardingPage() {
                             variant="outline"
                             size="sm"
                             onClick={() => handleDeleteQuestion(question.id)}
+                            title="Delete question"
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
