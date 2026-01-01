@@ -29,10 +29,10 @@ export default function QuestionViewPage() {
 
   // Edit state
   const [editedQuestion, setEditedQuestion] = useState({
-    questionText: { raw: '', html: '', plainText: '', assets: [] },
+    questionText: { raw: '', html: '', plainText: '', assets: [] as string[] },
     options: [] as any[],
-    hint: { raw: '', html: '', plainText: '', assets: [] },
-    solution: { raw: '', html: '', plainText: '', assets: [] },
+    hint: { raw: '', html: '', plainText: '', assets: [] as string[] },
+    solution: { raw: '', html: '', plainText: '', assets: [] as string[] },
   });
 
   useEffect(() => {
@@ -188,10 +188,25 @@ export default function QuestionViewPage() {
   const handleCancel = () => {
     if (question) {
       setEditedQuestion({
-        questionText: question.content.question || { raw: '', html: '', plainText: '', assets: [] },
+        questionText: question.content.question ? {
+          raw: question.content.question.raw || '',
+          html: question.content.question.html,
+          plainText: question.content.question.plain_text || '',
+          assets: []
+        } : { raw: '', html: '', plainText: '', assets: [] },
         options: question.answer?.pool?.options || [],
-        hint: question.content.hints || { raw: '', html: '', plainText: '', assets: [] },
-        solution: question.answer?.solution?.explanation || { raw: '', html: '', plainText: '', assets: [] },
+        hint: question.content.hints ? {
+          raw: question.content.hints.raw || '',
+          html: question.content.hints.html,
+          plainText: question.content.hints.plain_text || '',
+          assets: []
+        } : { raw: '', html: '', plainText: '', assets: [] },
+        solution: question.answer?.solution?.explanation ? {
+          raw: question.answer.solution.explanation.raw || '',
+          html: question.answer.solution.explanation.html,
+          plainText: question.answer.solution.explanation.plain_text || '',
+          assets: []
+        } : { raw: '', html: '', plainText: '', assets: [] },
       });
     }
     setIsEditing(false);
@@ -356,7 +371,12 @@ export default function QuestionViewPage() {
                 </div>
               ) : (
                 <div className="prose max-w-none">
-                  <RichContentRenderer content={question.content.question} />
+                  <RichContentRenderer content={{
+                    raw: question.content.question.raw || '',
+                    html: question.content.question.html,
+                    plainText: question.content.question.plain_text || '',
+                    assets: []
+                  }} />
                 </div>
               )}
 
@@ -409,7 +429,12 @@ export default function QuestionViewPage() {
                             {option.label}
                           </div>
                           <div className="flex-1">
-                            <RichContentRenderer content={option.content} />
+                            <RichContentRenderer content={{
+                              raw: option.content.raw || '',
+                              html: option.content.html,
+                              plainText: option.content.plain_text || '',
+                              assets: []
+                            }} />
                           </div>
                           {isCorrectOption(option.id) && (
                             <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
@@ -435,7 +460,14 @@ export default function QuestionViewPage() {
                     />
                   ) : (
                     <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                      <RichContentRenderer content={question.content.hints} />
+                      {question.content.hints && (
+                        <RichContentRenderer content={{
+                          raw: question.content.hints.raw || '',
+                          html: question.content.hints.html,
+                          plainText: question.content.hints.plain_text || '',
+                          assets: []
+                        }} />
+                      )}
                     </div>
                   )}
                 </div>
@@ -455,7 +487,14 @@ export default function QuestionViewPage() {
                     />
                   ) : (
                     <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                      <RichContentRenderer content={question.answer.solution.explanation} />
+                      {question.answer.solution?.explanation && (
+                        <RichContentRenderer content={{
+                          raw: question.answer.solution.explanation.raw || '',
+                          html: question.answer.solution.explanation.html,
+                          plainText: question.answer.solution.explanation.plain_text || '',
+                          assets: []
+                        }} />
+                      )}
                     </div>
                   )}
                 </div>
