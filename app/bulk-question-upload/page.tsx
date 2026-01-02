@@ -481,6 +481,8 @@ export default function BulkQuestionUploadPage() {
           ? { correct_option_id: question.options?.find(o => o.isCorrect)?.id }
           : question.questionType === 'MULTIPLE_CHOICE'
           ? { correct_option_ids: question.options?.filter(o => o.isCorrect).map(o => o.id) || [] }
+          : question.questionType === 'NUMERICAL'
+          ? { correct_value: question.correctAnswer }
           : {},
         solution: question.solution ? {
           explanation: createRichContent(

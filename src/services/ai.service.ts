@@ -16,8 +16,8 @@ export interface ExtractedQuestion {
     text: string;
     isCorrect: boolean;
   }>;
-  correctAnswer?: string;
-  questionType: 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE' | 'INTEGER' | 'PARAGRAPH';
+  correctAnswer?: number;
+  questionType: 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE' | 'NUMERICAL' | 'PARAGRAPH';
   difficulty: number; // 1-10 scale: 1-3 easy, 4-7 medium, 8-10 hard
   positiveMarks: number;
   negativeMarks: number;
@@ -749,7 +749,22 @@ Return ONLY valid JSON with no markdown code blocks, no additional text.`;
       // Step 2: Match best subject using configured LLM
       let bestSubject = subjects[0];
       if (subjectName && subjects.length > 0) {
-        const prompt = `Given this question: "${questionText.substring(0, 300)}" and subject hint: "${subjectName}", which of these subjects is the best match? Return ONLY the exact subject name from the list, nothing else.\n\nSubjects: ${subjects.map((s: any) => s.name).join(', ')}`;
+        const prompt = `You are an expert at matching academic subjects. Given the question and subject hint below, find the CLOSEST or MOST RELATED match from the provided list.
+
+Question: "${questionText.substring(0, 300)}"
+Subject Hint: "${subjectName}"
+
+Available Subjects:
+${subjects.map((s: any) => `- ${s.name}`).join('\n')}
+
+Instructions:
+1. Find the subject that is most closely related to the hint
+2. If exact match exists, use it
+3. If no exact match, find the semantically closest subject
+4. Return ONLY the exact subject name from the list above, nothing else
+5. Do not add explanations or extra text
+
+Best matching subject:`;
         const matchedName = await this.callLLM(prompt);
         bestSubject = subjects.find((s: any) => 
           s.name.toLowerCase() === matchedName.toLowerCase() ||
@@ -769,7 +784,22 @@ Return ONLY valid JSON with no markdown code blocks, no additional text.`;
       // Step 4: Match best chapter using configured LLM
       let bestChapter = chapters[0];
       if (chapterName && chapters.length > 0) {
-        const prompt = `Given this question: "${questionText.substring(0, 300)}" and chapter hint: "${chapterName}", which of these chapters is the best match? Return ONLY the exact chapter name from the list, nothing else.\n\nChapters: ${chapters.map((c: any) => c.name).join(', ')}`;
+        const prompt = `You are an expert at matching academic chapters. Given the question and chapter hint below, find the CLOSEST or MOST RELATED match from the provided list.
+
+Question: "${questionText.substring(0, 300)}"
+Chapter Hint: "${chapterName}"
+
+Available Chapters:
+${chapters.map((c: any) => `- ${c.name}`).join('\n')}
+
+Instructions:
+1. Find the chapter that is most closely related to the hint
+2. If exact match exists, use it
+3. If no exact match, find the semantically closest chapter
+4. Return ONLY the exact chapter name from the list above, nothing else
+5. Do not add explanations or extra text
+
+Best matching chapter:`;
         const matchedName = await this.callLLM(prompt);
         bestChapter = chapters.find((c: any) => 
           c.name.toLowerCase() === matchedName.toLowerCase() ||
@@ -789,7 +819,22 @@ Return ONLY valid JSON with no markdown code blocks, no additional text.`;
       // Step 6: Match best topic using configured LLM
       let bestTopic = topics[0];
       if (topicName && topics.length > 0) {
-        const prompt = `Given this question: "${questionText.substring(0, 300)}" and topic hint: "${topicName}", which of these topics is the best match? Return ONLY the exact topic name from the list, nothing else.\n\nTopics: ${topics.map((t: any) => t.name).join(', ')}`;
+        const prompt = `You are an expert at matching academic topics. Given the question and topic hint below, find the CLOSEST or MOST RELATED match from the provided list.
+
+Question: "${questionText.substring(0, 300)}"
+Topic Hint: "${topicName}"
+
+Available Topics:
+${topics.map((t: any) => `- ${t.name}`).join('\n')}
+
+Instructions:
+1. Find the topic that is most closely related to the hint
+2. If exact match exists, use it
+3. If no exact match, find the semantically closest topic
+4. Return ONLY the exact topic name from the list above, nothing else
+5. Do not add explanations or extra text
+
+Best matching topic:`;
         const matchedName = await this.callLLM(prompt);
         bestTopic = topics.find((t: any) => 
           t.name.toLowerCase() === matchedName.toLowerCase() ||
@@ -828,7 +873,7 @@ Return ONLY valid JSON with no markdown code blocks, no additional text.`;
       const response = await this.openai.chat.completions.create({
         model: this.config.model || 'gpt-4o-mini',
         messages: [{ role: 'user', content: prompt }],
-        max_completion_tokens: 100
+        max_completion_tokens: 500
       });
       return response.choices[0].message.content?.trim() || '';
     }

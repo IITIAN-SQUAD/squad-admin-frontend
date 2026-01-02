@@ -29,7 +29,7 @@ export interface AnswerPool {
 export interface AnswerKey {
   correct_option_id?: string;
   correct_option_ids?: string[];
-  numerical_value?: number;
+  correct_value?: number;
   tolerance?: number;
   unit?: string | null;
 }

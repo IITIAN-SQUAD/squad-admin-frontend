@@ -186,8 +186,8 @@ function QuestionEditorPageContent() {
           }
 
           // Map integer answer
-          if (questionData.answer_type === 'NUMERICAL' && questionData.answer.key.numerical_value !== undefined) {
-            mappedQuestion.integerAnswer = questionData.answer.key.numerical_value;
+          if (questionData.answer_type === 'NUMERICAL' && questionData.answer.key.correct_value !== undefined) {
+            mappedQuestion.integerAnswer = questionData.answer.key.correct_value;
           }
 
           setQuestion(mappedQuestion);
@@ -432,7 +432,7 @@ function QuestionEditorPageContent() {
 
       // For integer/numerical questions
       if (question.type === 'integer_based' && question.integerAnswer !== undefined) {
-        answer.key.numerical_value = question.integerAnswer;
+        answer.key.correct_value = question.integerAnswer;
       }
 
       // Add solution if provided

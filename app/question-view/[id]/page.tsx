@@ -380,6 +380,21 @@ export default function QuestionViewPage() {
                 </div>
               )}
 
+              {/* Correct Answer for NUMERICAL questions */}
+              {question.answer_type === 'NUMERICAL' && question.answer?.key?.correct_value !== undefined && (
+                <div className="space-y-2">
+                  <Label className="text-base font-semibold">Correct Answer:</Label>
+                  <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-5 h-5 text-green-600" />
+                      <span className="text-lg font-semibold text-green-800">
+                        {question.answer.key.correct_value}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Options */}
               {question.answer?.pool?.options && question.answer.pool.options.length > 0 && (
                 <div className="space-y-3">
