@@ -51,12 +51,16 @@ export interface LoginRequest {
 class AuthService {
   /**
    * Request OTP for admin login
-   * POST /v1/auth/user/request-otp/{email}
+   * POST /v1/auth/user/request-otp
    */
   async requestOtp(email: string): Promise<RequestOtpResponse> {
     try {
       const response = await apiClient.post<RequestOtpResponse>(
-        `/v1/auth/user/request-otp/${encodeURIComponent(email)}`
+        '/v1/auth/user/request-otp',
+        {
+          email,
+          requestType: 'USER_VALIDATION'
+        }
       );
       return response;
     } catch (error) {
