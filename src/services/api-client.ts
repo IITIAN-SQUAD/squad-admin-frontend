@@ -7,6 +7,8 @@ interface ApiResponse<T = any> {
   data?: T;
   message?: string;
   error?: string;
+  error_code?: string;
+  error_description?: string;
 }
 
 class ApiClient {
@@ -65,9 +67,18 @@ class ApiClient {
       const data = await response.json();
 
       if (!response.ok) {
-        const errorMessage = data.message || data.error || `HTTP ${response.status}`;
+        // Try different error message formats in order of preference
+        const errorMessage = 
+          data.error_description ||  // Backend error description
+          data.error ||             // Generic error field
+          data.message ||           // Message field
+          data.error_code ||        // Error code as fallback
+          `HTTP ${response.status}: ${response.statusText}`;
+        
         const error: any = new Error(errorMessage);
         error.status = response.status;
+        error.errorCode = data.error_code;
+        error.errorDescription = data.error_description;
         throw error;
       }
 
@@ -113,7 +124,10 @@ class ApiClient {
    * DELETE request
    */
   async delete<T>(endpoint: string, options?: RequestInit): Promise<T> {
-    return this.request<T>(endpoint, { ...options, method: 'DELETE' });
+    return this.request<T>(endpoint, {
+      ...options,
+      method: 'DELETE',
+    });
   }
 
   /**

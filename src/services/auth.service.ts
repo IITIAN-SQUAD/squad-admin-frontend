@@ -59,7 +59,7 @@ class AuthService {
         '/v1/auth/user/request-otp',
         {
           email,
-          requestType: 'USER_VALIDATION'
+          request_type: 'USER_VALIDATION'
         }
       );
       return response;

@@ -1,5 +1,6 @@
 "use client";
 
+import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -10,10 +11,18 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Settings, Eye, Edit, Trash } from "lucide-react";
-import { useState } from "react";
 import ConfirmDialog from "@/src/components/dialogs/ConfirmDialog";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogTrigger, DialogContent } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { categoryService } from "@/src/services/category.service";
+import { toast } from "sonner";
 
 // Banner image cell with modal preview
 const BannerImageCell = ({ row }: any) => {
@@ -103,8 +112,10 @@ const AuthorManagementActions = ({ row }: { row: any }) => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const handleDelete = () => {
-    console.log("Deleting author:", row.original.id);
-    // Implement delete logic here
+    // Dispatch delete event that will be handled by the parent component
+    if (typeof window !== 'undefined' && window.dispatchEvent) {
+      window.dispatchEvent(new CustomEvent('delete-author', { detail: row.original.id }));
+    }
     setIsDeleteDialogOpen(false);
   };
 
@@ -168,15 +179,74 @@ export const AUTHOR_TABLE_COLUMNS = [
   {
     accessorKey: "avatar",
     header: "Avatar",
-    cell: ({ row }: any) => (
-      <Image
-        src={row.original.avatar}
-        alt={row.original.name}
-        width={40}
-        height={40}
-        className="rounded-full object-cover"
-      />
-    ),
+    cell: ({ row }: any) => {
+      const avatarSrc = row.original.avatar;
+      
+      // Check if it's a data URL (generated avatar) or external URL
+      if (avatarSrc?.startsWith('data:')) {
+        // Use Next.js Image for data URLs (generated avatars)
+        return (
+          <Image
+            src={avatarSrc}
+            alt={row.original.name}
+            width={40}
+            height={40}
+            className="rounded-full object-cover"
+          />
+        );
+      } else if (avatarSrc) {
+        // Use regular img tag for external URLs to avoid domain restrictions
+        return (
+          <img
+            src={avatarSrc}
+            alt={row.original.name}
+            width={40}
+            height={40}
+            className="rounded-full object-cover"
+            onError={(e) => {
+              // Fallback to generated avatar on error
+              const target = e.target as HTMLImageElement;
+              const name = row.original.name;
+              const initials = name
+                .split(' ')
+                .map((word: string) => word.charAt(0).toUpperCase())
+                .join('')
+                .substring(0, 2);
+              
+              // Create a simple colored div with initials as fallback
+              target.style.display = 'none';
+              const parent = target.parentElement;
+              if (parent && !parent.querySelector('.fallback-avatar')) {
+                const colors = ['bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-purple-500', 'bg-pink-500'];
+                const colorIndex = name.split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0) % colors.length;
+                
+                const fallback = document.createElement('div');
+                fallback.className = `fallback-avatar w-10 h-10 rounded-full object-cover flex items-center justify-center text-white font-semibold text-sm ${colors[colorIndex]}`;
+                fallback.textContent = initials;
+                parent.appendChild(fallback);
+              }
+            }}
+          />
+        );
+      } else {
+        // No avatar - show placeholder
+        const name = row.original.name;
+        const initials = name
+          .split(' ')
+          .map((word: string) => word.charAt(0).toUpperCase())
+          .join('')
+          .substring(0, 2);
+        
+        const colors = ['bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-purple-500', 'bg-pink-500'];
+        const colorIndex = name.split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0) % colors.length;
+        
+        return (
+          <div className={`w-10 h-10 rounded-full object-cover flex items-center justify-center text-white font-semibold text-sm ${colors[colorIndex]}`}>
+            {initials}
+          </div>
+        );
+      }
+    },
   },
   {
     accessorKey: "name",
@@ -273,12 +343,9 @@ export const TABLE_COLUMNS = {
       accessorKey: "name",
       header: "Category Name",
       cell: ({ row }: any) => (
-        <Link
-          href={`/content/category-specification/${row.original.id}`}
-          className="hover:underline"
-        >
+        <span className="font-medium">
           {row.original.name}
-        </Link>
+        </span>
       ),
     },
     {
@@ -288,6 +355,11 @@ export const TABLE_COLUMNS = {
     {
       accessorKey: "totalBlogs",
       header: "Total Blogs",
+      cell: ({ row }: any) => (
+        <span className="text-sm">
+          {row.original.totalBlogs}
+        </span>
+      ),
     },
     {
       accessorKey: "createdBy",
@@ -299,43 +371,179 @@ export const TABLE_COLUMNS = {
       cell: (props: any) => {
         // stateful cell component (renders per-row)
         const { row } = props;
-        const [open, setOpen] = useState(false);
+        const [deleteOpen, setDeleteOpen] = useState(false);
+        const [editOpen, setEditOpen] = useState(false);
+        const [loading, setLoading] = useState(false);
+        const [editName, setEditName] = useState(row.original.name);
+        const [editLoading, setEditLoading] = useState(false);
 
-        const handleDelete = () => {
-          // implement delete logic here, e.g. call API with row.original.id
-          // console.log("Delete category", row.original.id);
-          setOpen(false);
+        const handleDelete = async () => {
+          try {
+            setLoading(true);
+            
+            // Call the real API
+            await categoryService.deleteCategory(row.original.id);
+            
+            toast.success('Category deleted successfully');
+            setDeleteOpen(false);
+            
+            // Dispatch event to refresh the list
+            window.dispatchEvent(new CustomEvent('category-deleted', { detail: row.original.id }));
+          } catch (error: any) {
+            console.error("Failed to delete category:", error);
+            
+            // Extract specific error message
+            let errorMessage = 'Failed to delete category';
+            if (error?.message) {
+              errorMessage = error.message;
+            } else if (error?.errorDescription) {
+              errorMessage = error.errorDescription;
+            } else if (error?.errorCode) {
+              errorMessage = `Error: ${error.errorCode}`;
+            }
+            
+            toast.error(errorMessage);
+          } finally {
+            setLoading(false);
+          }
+        };
+
+        const handleUpdate = async (e: React.FormEvent) => {
+          e.preventDefault();
+          
+          if (!editName.trim()) {
+            toast.error("Category name is required");
+            return;
+          }
+
+          try {
+            setEditLoading(true);
+            
+            // Call the real API
+            await categoryService.updateCategory(row.original.id, { name: editName.trim() });
+            
+            toast.success('Category updated successfully');
+            setEditOpen(false);
+            
+            // Dispatch event to refresh the list
+            window.dispatchEvent(new CustomEvent('category-updated', { detail: row.original.id }));
+          } catch (error: any) {
+            console.error("Failed to update category:", error);
+            
+            // Extract specific error message
+            let errorMessage = 'Failed to update category';
+            if (error?.message) {
+              errorMessage = error.message;
+            } else if (error?.errorDescription) {
+              errorMessage = error.errorDescription;
+            } else if (error?.errorCode) {
+              errorMessage = `Error: ${error.errorCode}`;
+            }
+            
+            toast.error(errorMessage);
+          } finally {
+            setEditLoading(false);
+          }
         };
 
         return (
           <>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="w-8 h-8">
-                  <Settings className="w-5 h-5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem>
-                  {/* view category - replace with link/action as needed */}
-                  View Category
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setOpen(true)}>
-                  Delete Category
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <div className="flex gap-1">
+              {/* Edit Button */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="w-8 h-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                onClick={() => {
+                  setEditName(row.original.name);
+                  setEditOpen(true);
+                }}
+                title="Edit Category"
+              >
+                <Edit className="w-4 h-4" />
+              </Button>
 
-            <ConfirmDialog
-              isOpen={open}
-              onOpenChange={setOpen}
-              title="Delete Category"
-              description="Are you sure you want to delete this category? This action cannot be undone."
-              confirmLabel="Delete"
-              cancelLabel="Cancel"
-              onConfirm={handleDelete}
-              variant="destructive"
-            />
+              {/* Delete Button */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="w-8 h-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                onClick={() => setDeleteOpen(true)}
+                title="Delete Category"
+              >
+                <Trash className="w-4 h-4" />
+              </Button>
+            </div>
+
+            {/* Delete Confirmation Dialog */}
+            <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Delete Category</DialogTitle>
+                </DialogHeader>
+                <p className="text-gray-600">
+                  Are you sure you want to delete "{row.original.name}"? This action cannot be undone.
+                </p>
+                <DialogFooter>
+                  <Button
+                    variant="outline"
+                    onClick={() => setDeleteOpen(false)}
+                    disabled={loading}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={handleDelete}
+                    disabled={loading}
+                  >
+                    {loading ? "Deleting..." : "Delete"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            {/* Edit Dialog */}
+            <Dialog open={editOpen} onOpenChange={setEditOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Edit Category</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleUpdate} className="space-y-4">
+                  <div className="space-y-1">
+                    <label htmlFor="edit-category-name" className="text-sm font-medium">
+                      Category Name
+                    </label>
+                    <input
+                      id="edit-category-name"
+                      type="text"
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      placeholder="Enter category name"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      disabled={editLoading}
+                      required
+                    />
+                  </div>
+                  <DialogFooter>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setEditOpen(false)}
+                      disabled={editLoading}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      disabled={editLoading}
+                    >
+                      {editLoading ? "Updating..." : "Update"}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
           </>
         );
       },
@@ -345,28 +553,52 @@ export const TABLE_COLUMNS = {
     {
       accessorKey: "srNo",
       header: "Sr No",
+      cell: ({ row }: any) => row.index + 1,
     },
     {
       accessorKey: "heading",
       header: "Article Heading",
+      cell: ({ row }: any) => (
+        <span className="font-medium">{row.original.heading}</span>
+      ),
     },
     {
-      accessorKey: "bannerImage",
-      header: "Banner Image",
-      cell: BannerImageCell,
+      accessorKey: "category_name",
+      header: "Category",
+      cell: ({ row }: any) => {
+        const category = row.original.category_name || "Uncategorized";
+        return <Badge variant="outline">{category}</Badge>;
+      },
     },
     {
-      accessorKey: "createdOn",
-      header: "Created On",
+      accessorKey: "author_name",
+      header: "Author",
     },
     {
-      accessorKey: "visibility",
-      header: "Visibility",
-      cell: VisibilityBadgeCell,
+      accessorKey: "views_count",
+      header: "Views",
     },
     {
-      accessorKey: "createdBy",
-      header: "Created By",
+      accessorKey: "likes_count",
+      header: "Likes",
+    },
+    {
+      accessorKey: "published_at",
+      header: "Published On",
+      cell: ({ row }: any) => {
+        const timestamp = row.original.published_at;
+        if (!timestamp) return "N/A";
+        return new Date(timestamp).toLocaleDateString();
+      },
+    },
+    {
+      accessorKey: "updated_at",
+      header: "Modified On",
+      cell: ({ row }: any) => {
+        const timestamp = row.original.updated_at;
+        if (!timestamp) return "N/A";
+        return new Date(timestamp).toLocaleDateString();
+      },
     },
     {
       id: "actions",
@@ -379,9 +611,30 @@ export const TABLE_COLUMNS = {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem>View Article</DropdownMenuItem>
-            <DropdownMenuItem>Edit Article</DropdownMenuItem>
-            <DropdownMenuItem>Delete Article</DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href={`/blog-management/view/${row.original.id}`}>
+                <Eye className="w-4 h-4 mr-2" />
+                View Article
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href={`/blog-management/edit/${row.original.id}`}>
+                <Edit className="w-4 h-4 mr-2" />
+                Edit Article
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="text-red-600 focus:text-red-600"
+              onClick={() => {
+                if (confirm(`Are you sure you want to delete "${row.original.heading}"?`)) {
+                  // TODO: Implement delete functionality
+                  console.log('Delete blog:', row.original.id);
+                }
+              }}
+            >
+              <Trash className="w-4 h-4 mr-2" />
+              Delete Article
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       ),

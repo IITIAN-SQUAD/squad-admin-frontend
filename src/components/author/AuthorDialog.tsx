@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -21,13 +21,15 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { authorService, Author } from "@/src/services/author.service";
+import { toast } from "sonner";
 
 // Define form schema
 const authorFormSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
   email: z.string().email({ message: "Please enter a valid email address." }),
   description: z.string().optional(),
-  image: z.string().optional(),
+  profilePicture: z.string().optional(),
 });
 
 type AuthorFormValues = z.infer<typeof authorFormSchema>;
@@ -35,11 +37,13 @@ type AuthorFormValues = z.infer<typeof authorFormSchema>;
 interface AuthorDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  author?: any; // For editing existing author
+  author?: Author | null; // For editing existing author
+  onSave?: () => void; // Callback after save
 }
 
-export function AuthorDialog({ isOpen, onOpenChange, author }: AuthorDialogProps) {
+export function AuthorDialog({ isOpen, onOpenChange, author, onSave }: AuthorDialogProps) {
   const isEditing = !!author;
+  const [loading, setLoading] = useState(false);
   
   // Initialize form
   const form = useForm<AuthorFormValues>({
@@ -48,7 +52,7 @@ export function AuthorDialog({ isOpen, onOpenChange, author }: AuthorDialogProps
       name: "",
       email: "",
       description: "",
-      image: "",
+      profilePicture: "",
     },
   });
 
@@ -59,32 +63,65 @@ export function AuthorDialog({ isOpen, onOpenChange, author }: AuthorDialogProps
         name: author.name || "",
         email: author.email || "",
         description: author.description || "",
-        image: author.avatar || "",
+        profilePicture: author.profilePicture || "",
       });
     } else {
       form.reset({
         name: "",
         email: "",
         description: "",
-        image: "",
+        profilePicture: "",
       });
     }
   }, [author, form]);
 
   // Form submission handler
-  const onSubmit = (data: AuthorFormValues) => {
-    console.log("Form submitted:", data);
-    
-    // Here you would typically save the data to your backend
-    if (isEditing) {
-      console.log("Updating author:", author.id);
-      // Update author logic
-    } else {
-      console.log("Creating new author");
-      // Create author logic
+  const onSubmit = async (data: AuthorFormValues) => {
+    try {
+      setLoading(true);
+      
+      if (isEditing && author) {
+        // Update existing author
+        await authorService.updateAuthor(author.id, {
+          ...data,
+          profilePicture: data.profilePicture || undefined,
+        });
+        toast.success("Author updated successfully");
+      } else {
+        // Create new author
+        await authorService.createAuthor({
+          ...data,
+          profilePicture: data.profilePicture || undefined,
+        });
+        toast.success("Author created successfully");
+      }
+      
+      // Reset form and close dialog
+      form.reset();
+      onOpenChange(false);
+      
+      // Call save callback if provided
+      if (onSave) {
+        onSave();
+      }
+    } catch (error: any) {
+      console.error("Failed to save author:", error);
+      
+      // Extract the most specific error message
+      let errorMessage = isEditing ? "Failed to update author" : "Failed to create author";
+      
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (error?.errorDescription) {
+        errorMessage = error.errorDescription;
+      } else if (error?.errorCode) {
+        errorMessage = `Error: ${error.errorCode}`;
+      }
+      
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
     }
-    
-    onOpenChange(false);
   };
 
   return (
@@ -144,12 +181,12 @@ export function AuthorDialog({ isOpen, onOpenChange, author }: AuthorDialogProps
             
             <FormField
               control={form.control}
-              name="image"
+              name="profilePicture"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Image URL</FormLabel>
+                  <FormLabel>Profile Picture URL</FormLabel>
                   <FormControl>
-                    <Input placeholder="Image URL" {...field} />
+                    <Input placeholder="Profile picture URL" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -160,8 +197,8 @@ export function AuthorDialog({ isOpen, onOpenChange, author }: AuthorDialogProps
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
-              <Button type="submit">
-                {isEditing ? "Update" : "Create"}
+              <Button type="submit" disabled={loading}>
+                {loading ? "Saving..." : (isEditing ? "Update" : "Create")}
               </Button>
             </DialogFooter>
           </form>
