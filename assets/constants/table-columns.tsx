@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { categoryService } from "@/src/services/category.service";
 import { toast } from "sonner";
+import EditCategoryForm from "@/src/components/content/EditCategoryForm";
 
 // Banner image cell with modal preview
 const BannerImageCell = ({ row }: any) => {
@@ -349,6 +350,34 @@ export const TABLE_COLUMNS = {
       ),
     },
     {
+      accessorKey: "display_name",
+      header: "Display Name",
+      cell: ({ row }: any) => (
+        <span className="font-medium text-blue-600">
+          {row.original.display_name || row.original.name}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "exams",
+      header: "Associated Exams",
+      cell: ({ row }: any) => {
+        const exams = row.original.exams || [];
+        if (exams.length === 0) {
+          return <span className="text-gray-500 text-sm">No exams</span>;
+        }
+        return (
+          <div className="flex flex-wrap gap-1">
+            {exams.map((examName: string, index: number) => (
+              <Badge key={index} variant="secondary" className="text-xs">
+                {examName}
+              </Badge>
+            ))}
+          </div>
+        );
+      },
+    },
+    {
       accessorKey: "createdOn",
       header: "Created On",
     },
@@ -374,8 +403,6 @@ export const TABLE_COLUMNS = {
         const [deleteOpen, setDeleteOpen] = useState(false);
         const [editOpen, setEditOpen] = useState(false);
         const [loading, setLoading] = useState(false);
-        const [editName, setEditName] = useState(row.original.name);
-        const [editLoading, setEditLoading] = useState(false);
 
         const handleDelete = async () => {
           try {
@@ -408,44 +435,6 @@ export const TABLE_COLUMNS = {
           }
         };
 
-        const handleUpdate = async (e: React.FormEvent) => {
-          e.preventDefault();
-          
-          if (!editName.trim()) {
-            toast.error("Category name is required");
-            return;
-          }
-
-          try {
-            setEditLoading(true);
-            
-            // Call the real API
-            await categoryService.updateCategory(row.original.id, { name: editName.trim() });
-            
-            toast.success('Category updated successfully');
-            setEditOpen(false);
-            
-            // Dispatch event to refresh the list
-            window.dispatchEvent(new CustomEvent('category-updated', { detail: row.original.id }));
-          } catch (error: any) {
-            console.error("Failed to update category:", error);
-            
-            // Extract specific error message
-            let errorMessage = 'Failed to update category';
-            if (error?.message) {
-              errorMessage = error.message;
-            } else if (error?.errorDescription) {
-              errorMessage = error.errorDescription;
-            } else if (error?.errorCode) {
-              errorMessage = `Error: ${error.errorCode}`;
-            }
-            
-            toast.error(errorMessage);
-          } finally {
-            setEditLoading(false);
-          }
-        };
-
         return (
           <>
             <div className="flex gap-1">
@@ -455,7 +444,6 @@ export const TABLE_COLUMNS = {
                 size="icon"
                 className="w-8 h-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                 onClick={() => {
-                  setEditName(row.original.name);
                   setEditOpen(true);
                 }}
                 title="Edit Category"
@@ -506,42 +494,15 @@ export const TABLE_COLUMNS = {
             {/* Edit Dialog */}
             <Dialog open={editOpen} onOpenChange={setEditOpen}>
               <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Edit Category</DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleUpdate} className="space-y-4">
-                  <div className="space-y-1">
-                    <label htmlFor="edit-category-name" className="text-sm font-medium">
-                      Category Name
-                    </label>
-                    <input
-                      id="edit-category-name"
-                      type="text"
-                      value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
-                      placeholder="Enter category name"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      disabled={editLoading}
-                      required
-                    />
-                  </div>
-                  <DialogFooter>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setEditOpen(false)}
-                      disabled={editLoading}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      type="submit"
-                      disabled={editLoading}
-                    >
-                      {editLoading ? "Updating..." : "Update"}
-                    </Button>
-                  </DialogFooter>
-                </form>
+                <EditCategoryForm 
+                  category={row.original}
+                  onClose={setEditOpen}
+                  onSave={() => {
+                    setEditOpen(false);
+                    // Dispatch event to refresh the list
+                    window.dispatchEvent(new CustomEvent('category-updated', { detail: row.original.id }));
+                  }} 
+                />
               </DialogContent>
             </Dialog>
           </>

@@ -12,14 +12,14 @@ export {
 // Form values type
 export interface BlogFormValues {
   heading: string;
-  sub_heading: string;
-  banner_image: string;
+  sub_heading?: string;
+  banner_image?: string;
   body: string;
   summary: string;
-  meta_title: string;
-  meta_description: string;
-  canonical_url: string;
-  meta_image: string;
+  meta_title?: string;
+  meta_description?: string;
+  canonical_url?: string;
+  meta_image?: string;
   blog_visibility_status: 'DRAFT' | 'UNDER_REVIEW' | 'PUBLISHED' | 'ARCHIVED' | 'REJECTED';
   author_id: string;
   slug: string;

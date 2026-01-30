@@ -12,7 +12,8 @@ import { Dialog, DialogTrigger, DialogContent } from "@/components/ui/dialog";
 import { Plus, FolderOpen, RefreshCw, ChevronLeft, ChevronRight } from "lucide-react";
 import React, { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { categoryService, Category, CategoryListResponse } from "@/src/services/category.service";
+import { categoryService, Category, CategoryListResponse, Exam } from "@/src/services/category.service";
+import { Badge } from "@/components/ui/badge";
 
 // Pagination settings
 const ITEMS_PER_PAGE = 10;
@@ -20,8 +21,20 @@ const ITEMS_PER_PAGE = 10;
 export default function CategoryListingPage() {
   const [open, setOpen] = useState(false);
   const [categoryData, setCategoryData] = useState<CategoryListResponse | null>(null);
+  const [exams, setExams] = useState<Exam[]>([]);
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Fetch exams for mapping
+  const fetchExams = async () => {
+    try {
+      const examsData = await categoryService.getAllExams();
+      setExams(examsData);
+    } catch (error) {
+      console.error('Failed to fetch exams:', error);
+      toast.warning('Could not load exams for display. Category names will still be shown.');
+    }
+  };
 
   // Fetch categories from API
   const fetchCategories = async () => {
@@ -52,6 +65,7 @@ export default function CategoryListingPage() {
   // Initial fetch
   useEffect(() => {
     fetchCategories();
+    fetchExams();
   }, []);
 
   // Add event listener for category deletion
@@ -77,6 +91,14 @@ export default function CategoryListingPage() {
     fetchCategories(); // Refresh the list
   };
 
+  // Helper function to get exam names by IDs
+  const getExamNames = (examIds: string[]): string[] => {
+    return examIds.map(id => {
+      const exam = exams.find(e => e.id === id);
+      return exam ? exam.name : `Unknown (${id})`;
+    });
+  };
+
   // Pagination logic
   const totalPages = categoryData ? Math.ceil(categoryData.total_categories / ITEMS_PER_PAGE) : 0;
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -89,6 +111,8 @@ export default function CategoryListingPage() {
   const transformedCategories = paginatedCategories.map((category, index) => ({
     id: category.id,
     name: category.name,
+    display_name: category.display_name,
+    exams: getExamNames(category.exam_ids || []),
     createdOn: new Date(category.created_at).toLocaleDateString(),
     totalBlogs: category.blog_count || 0, // Use actual blog count from API
     createdBy: category.created_by_admin_id, // TODO: Get admin name by ID

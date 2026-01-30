@@ -52,16 +52,6 @@ const nextConfig: NextConfig = {
         hostname: "api.unsplash.com",
       },
     ],
-    domains: [
-      'example.com',
-      '*.example.com',
-      'cdn.example.com',
-      'images.example.com',
-      'assets.example.com',
-      'images.unsplash.com',
-      'source.unsplash.com',
-      'unsplash.com',
-    ],
   },
   async rewrites() {
     const backendUrl = process.env.BACKEND_URL || 'https://serve.iitiansquad.com';

@@ -50,11 +50,7 @@ export default function AuthorManagementPage() {
       // Transform backend data to table format
       const transformedAuthors = authorsData.map((author, index) => ({
         srNo: index + 1,
-        id: author.id,
-        name: author.name,
-        email: author.email,
         avatar: author.profilePicture || generateAvatarDataURL(author.name),
-        associatedBlogs: author.associatedBlogs,
         addedBy: author.createdByAdminId, // You might want to fetch admin name by ID
         ...author // Include all author data for editing
       }));
@@ -178,7 +174,6 @@ export default function AuthorManagementPage() {
             columns={AUTHOR_TABLE_COLUMNS}
             data={authors}
             searchPlaceholder="Search authors..."
-            loading={loading}
           />
         </Section>
       </div>

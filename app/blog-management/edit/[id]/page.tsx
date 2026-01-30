@@ -53,6 +53,7 @@ export default function EditBlogPage() {
         body: data.body,
         summary: data.summary,
         quiz_questions: quizQuestions.map(q => ({
+          id: q.id,
           text: q.text,
           options: q.options,
           correct_answer_label: q.correct_answer_label
@@ -198,7 +199,10 @@ export default function EditBlogPage() {
           schema: blog.schema,
           tags: blog.tags.map(tag => tag.name)
         }}
-        initialQuizQuestions={blog.quiz_questions || []}
+        initialQuizQuestions={(blog.quiz_questions || []).map((q, index) => ({
+          ...q,
+          id: q.id || `question-${index}-${Date.now()}`
+        }))}
         onSubmit={handleSubmit}
         onCancel={handleCancel}
         isSubmitting={isSubmitting}

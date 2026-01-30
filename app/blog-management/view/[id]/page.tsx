@@ -71,7 +71,7 @@ export default function ArticleViewPage() {
 
   return (
     <PageWrapper>
-      <PageHeader>
+      <PageHeader title={blog.heading}>
         <div className="flex items-center gap-4 mb-4">
           <Button variant="ghost" size="sm" onClick={() => router.back()}>
             <ArrowLeft className="w-4 h-4 mr-2" />

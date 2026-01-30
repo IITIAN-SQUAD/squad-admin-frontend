@@ -7,7 +7,7 @@ export interface BlogOption {
 }
 
 export interface BlogQuizQuestion {
-  id?: string;
+  id: string;
   text: string;
   options: BlogOption[];
   correct_answer_label: string;

@@ -5,18 +5,19 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { categoryService, Exam } from "@/src/services/category.service";
+import { categoryService, Exam, Category } from "@/src/services/category.service";
 
-interface CreateCategoryFormProps {
+interface EditCategoryFormProps {
+  category: Category;
   onClose: (open: boolean) => void;
   onSave?: () => void; // Callback after successful save
 }
 
-export default function CreateCategoryForm({ onClose, onSave }: CreateCategoryFormProps) {
-  const [name, setName] = useState("");
-  const [displayName, setDisplayName] = useState("");
+export default function EditCategoryForm({ category, onClose, onSave }: EditCategoryFormProps) {
+  const [name, setName] = useState(category.name);
+  const [displayName, setDisplayName] = useState(category.display_name || "");
   const [exams, setExams] = useState<Exam[]>([]);
-  const [selectedExamIds, setSelectedExamIds] = useState<string[]>([]);
+  const [selectedExamIds, setSelectedExamIds] = useState<string[]>(category.exam_ids || []);
   const [loading, setLoading] = useState(false);
 
   // Fetch exams on component mount
@@ -28,7 +29,7 @@ export default function CreateCategoryForm({ onClose, onSave }: CreateCategoryFo
       } catch (error) {
         console.error('Failed to fetch exams:', error);
         // Still show the form even if exams fail to load
-        toast.warning('Could not load exams. You can still create the category without exams.');
+        toast.warning('Could not load exams. You can still update the category without exams.');
       }
     };
     fetchExams();
@@ -59,16 +60,12 @@ export default function CreateCategoryForm({ onClose, onSave }: CreateCategoryFo
       setLoading(true);
       
       // Call the real API using rewrites
-      await categoryService.createCategory({ 
+      await categoryService.updateCategory(category.id, { 
         name: name.trim(),
-        display_name: displayName.trim(),
         exam_ids: selectedExamIds 
       });
       
-      toast.success("Category created successfully");
-      setName(""); // Reset form
-      setDisplayName(""); // Reset display name
-      setSelectedExamIds([]); // Reset exam selection
+      toast.success("Category updated successfully");
       onClose(false);
       
       // Call save callback if provided
@@ -76,10 +73,10 @@ export default function CreateCategoryForm({ onClose, onSave }: CreateCategoryFo
         onSave();
       }
     } catch (error: any) {
-      console.error("Failed to create category:", error);
+      console.error("Failed to update category:", error);
       
       // Extract specific error message
-      let errorMessage = 'Failed to create category';
+      let errorMessage = 'Failed to update category';
       if (error?.message) {
         errorMessage = error.message;
       } else if (error?.errorDescription) {
@@ -97,7 +94,7 @@ export default function CreateCategoryForm({ onClose, onSave }: CreateCategoryFo
   return (
     <>
       <DialogHeader>
-        <DialogTitle>Create Category</DialogTitle>
+        <DialogTitle>Edit Category</DialogTitle>
       </DialogHeader>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -107,24 +104,10 @@ export default function CreateCategoryForm({ onClose, onSave }: CreateCategoryFo
             id="category-name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Enter category name (e.g., physics_preparation)"
+            placeholder="Enter category name"
             required
             disabled={loading}
           />
-          <p className="text-xs text-gray-500">Internal identifier for the category (lowercase, no spaces)</p>
-        </div>
-
-        <div className="space-y-1">
-          <Label htmlFor="display-name">Display Name</Label>
-          <Input
-            id="display-name"
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            placeholder="Enter display name (e.g., Physics Preparation)"
-            required
-            disabled={loading}
-          />
-          <p className="text-xs text-gray-500">User-friendly name that will be shown in the UI</p>
         </div>
 
         <div className="space-y-2">
@@ -132,7 +115,7 @@ export default function CreateCategoryForm({ onClose, onSave }: CreateCategoryFo
           <div className="max-h-40 overflow-y-auto border rounded-md p-3 space-y-2">
             {exams.length === 0 ? (
               <p className="text-sm text-gray-500">
-                No exams available. You can create the category without exams and add them later.
+                No exams available. You can update the category without exams and add them later.
               </p>
             ) : (
               exams.map((exam) => (
@@ -168,7 +151,7 @@ export default function CreateCategoryForm({ onClose, onSave }: CreateCategoryFo
             Cancel
           </Button>
           <Button type="submit" disabled={loading}>
-            {loading ? "Creating..." : "Create"}
+            {loading ? "Updating..." : "Update"}
           </Button>
         </DialogFooter>
       </form>
