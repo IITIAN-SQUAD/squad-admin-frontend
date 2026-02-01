@@ -380,15 +380,13 @@ console.log("code block")
                             />
                           </FormControl>
                           <FormDescription>
-                            Enter the URL for the banner image.
-                            <div className="mt-1 space-y-1">
-                              <span className="text-blue-600">Test URLs:</span>
-                              <div className="text-xs text-gray-600">
-                                • General: https://picsum.photos/800/400
-                                • Unsplash: https://source.unsplash.com/800x400/?nature,water
-                                • Unsplash ID: https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800
-                              </div>
-                            </div>
+                            <span>Enter the URL for the banner image.</span>
+                            <span className="block mt-1 text-blue-600">Test URLs:</span>
+                            <span className="block text-xs text-gray-600">
+                              • General: https://picsum.photos/800/400<br />
+                              • Unsplash: https://source.unsplash.com/800x400/?nature,water<br />
+                              • Unsplash ID: https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800
+                            </span>
                           </FormDescription>
                           <FormMessage />
                         </FormItem>

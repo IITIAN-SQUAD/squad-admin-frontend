@@ -195,7 +195,7 @@ export default function ArticleViewPage() {
             <CardContent>
               <div className="space-y-6">
                 {blog.quiz_questions.map((quiz, index) => (
-                  <div key={quiz.id || index} className="border-b pb-4 last:border-b-0">
+                  <div key={index} className="border-b pb-4 last:border-b-0">
                     <p className="font-medium text-lg mb-3">
                       {index + 1}. {quiz.text}
                     </p>

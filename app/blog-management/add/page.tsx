@@ -17,7 +17,6 @@ export default function BlogAddPage() {
         body: data.body,
         summary: data.summary,
         quiz_questions: quizQuestions.map(q => ({
-          id: q.id,
           text: q.text,
           options: q.options,
           correct_answer_label: q.correct_answer_label

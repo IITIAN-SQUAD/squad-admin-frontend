@@ -81,50 +81,32 @@ export default function AppSidebar() {
   useEffect(() => {
     // Fetch admin info from API
     const fetchAdminData = async () => {
-      console.log('[Sidebar] useEffect triggered');
       const token = localStorage.getItem('auth_token');
       const hasCookies = document.cookie.includes('auth_token') || document.cookie.includes('jwt');
-      
-      console.log('[Sidebar] Token:', !!token, 'Cookies:', hasCookies);
       
       // Don't redirect here - let middleware handle it
       // Just skip API call if no auth
       if (!token && !hasCookies) {
-        console.log('[Sidebar] No token or cookies, skipping API call');
         return;
       }
 
       try {
-        console.log('[Sidebar] Fetching admin data from API...');
         const authService = (await import('@/src/services/auth.service')).default;
         const response = await authService.getAdminProfile();
-        
-        console.log('[Sidebar] Full API response:', JSON.stringify(response, null, 2));
-        
+                
         // Check if response has admin property or is the admin data directly
         const adminData = response.admin || response;
-        console.log('[Sidebar] Admin data:', adminData);
-        console.log('[Sidebar] Admin name:', adminData.name);
         
         if (adminData && adminData.name) {
-          console.log('[Sidebar] Setting admin name to:', adminData.name);
           setAdminName(adminData.name);
           setAdminRole("Administrator");
           
           // Store in localStorage for future use
           localStorage.setItem('admin', JSON.stringify(adminData));
-          console.log('[Sidebar] Admin data stored in localStorage');
-        } else {
-          console.warn('[Sidebar] No admin name in response');
         }
       } catch (error: any) {
-        console.error('[Sidebar] Failed to fetch admin data:', error);
-        console.error('[Sidebar] Error message:', error.message);
-        console.error('[Sidebar] Error status:', error.status);
-        
         // If 401 unauthorized, clear session and redirect to login
         if (error.status === 401 || error.message?.includes('401') || error.message?.includes('Unauthorized')) {
-          console.log('[Sidebar] 401 error, clearing session and redirecting to login');
           localStorage.removeItem('auth_token');
           localStorage.removeItem('admin');
           document.cookie = 'auth_token=; path=/; max-age=0';
@@ -133,7 +115,6 @@ export default function AppSidebar() {
           return;
         }
         
-        // Try to use cached data from localStorage for other errors
         const admin = localStorage.getItem('admin');
         if (admin && admin !== 'undefined' && admin !== 'null') {
           try {
@@ -143,7 +124,7 @@ export default function AppSidebar() {
               setAdminRole("Administrator");
             }
           } catch (e) {
-            console.error('[Sidebar] Failed to parse cached admin data:', e);
+            // Failed to parse cached admin data
           }
         }
       }

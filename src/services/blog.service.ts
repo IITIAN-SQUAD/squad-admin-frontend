@@ -7,7 +7,6 @@ export interface BlogOption {
 }
 
 export interface BlogQuizQuestion {
-  id: string;
   text: string;
   options: BlogOption[];
   correct_answer_label: string;
@@ -172,12 +171,9 @@ export interface BlogService {
 class BlogServiceImpl implements BlogService {
   async filterBlogs(filters: BlogFilterRequest): Promise<BlogFilterResponse> {
     try {
-      console.log('Making filter request with filters:', filters);
       const response = await apiClient.post<BlogFilterResponse>('/v0/admin/blog/filter', filters);
-      console.log('Filter API Response:', response);
       return response;
     } catch (error) {
-      console.error('Error filtering blogs:', error);
       throw error;
     }
   }
@@ -185,7 +181,6 @@ class BlogServiceImpl implements BlogService {
   async getAllBlogs(page: number = 0, size: number = 20): Promise<BlogListResponse> {
     try {
       const response = await apiClient.get(`/v0/admin/blog?page=${page}&size=${size}`);
-      console.log('Raw API Response:', response);
       
       // Handle response format - the API returns the array directly
       if (Array.isArray(response.data)) {
@@ -196,45 +191,38 @@ class BlogServiceImpl implements BlogService {
           size,
           totalPages: Math.ceil(response.data.length / size)
         };
-        console.log('Processed Response:', result);
         return result;
       }
       
-      console.log('Response is not array:', response.data);
       return response.data;
     } catch (error) {
-      console.error('Error fetching blogs:', error);
       throw error;
     }
   }
 
   async getBlogById(id: string): Promise<Blog> {
     try {
-      const response = await apiClient.get(`/v0/admin/blog/${id}`);
-      console.log('getBlogById response:', response);
+      const response = await apiClient.get<Blog>(`/v0/admin/blog/${id}`);
       return response;
     } catch (error) {
-      console.error('Error fetching blog by ID:', error);
       throw error;
     }
   }
 
   async createBlog(blogData: CreateBlogRequest): Promise<Blog> {
     try {
-      const response = await apiClient.post('/v0/admin/blog', blogData);
+      const response = await apiClient.post<{ data: Blog }>('/v0/admin/blog', blogData);
       return response.data;
     } catch (error) {
-      console.error('Error creating blog:', error);
       throw error;
     }
   }
 
   async updateBlog(id: string, blogData: UpdateBlogRequest): Promise<Blog> {
     try {
-      const response = await apiClient.put(`/v0/admin/blog/${id}`, blogData);
+      const response = await apiClient.put<{ data: Blog }>(`/v0/admin/blog/${id}`, blogData);
       return response.data;
     } catch (error) {
-      console.error('Error updating blog:', error);
       throw error;
     }
   }
@@ -243,7 +231,6 @@ class BlogServiceImpl implements BlogService {
     try {
       await apiClient.delete(`/v0/admin/blog/${id}`);
     } catch (error) {
-      console.error('Error deleting blog:', error);
       throw error;
     }
   }

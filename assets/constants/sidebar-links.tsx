@@ -59,7 +59,7 @@ export const SIDEBAR_LINKS = {
         },
         {
             title: "AI Blog Writer",
-            url: "/blog-agent",
+            url: "/ai-blog-writer",
             icon: Sparkles
         },
         {

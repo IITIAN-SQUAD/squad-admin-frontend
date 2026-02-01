@@ -532,6 +532,26 @@ export const TABLE_COLUMNS = {
       },
     },
     {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }: any) => {
+        const status = row.original.status || "DRAFT";
+        const statusColors: Record<string, string> = {
+          PUBLISHED: "bg-green-100 text-green-800 border-green-300",
+          DRAFT: "bg-yellow-100 text-yellow-800 border-yellow-300",
+          ARCHIVED: "bg-gray-100 text-gray-800 border-gray-300",
+        };
+        return (
+          <Badge 
+            variant="outline" 
+            className={statusColors[status] || "bg-gray-100 text-gray-800"}
+          >
+            {status}
+          </Badge>
+        );
+      },
+    },
+    {
       accessorKey: "author_name",
       header: "Author",
     },
