@@ -2,7 +2,7 @@
 import { useRouter } from "next/navigation";
 import BlogForm from "@/src/components/blog/BlogForm";
 import { blogService, CreateBlogRequest } from "@/src/services/blog.service";
-import { BlogFormValues } from "@/src/types/blog";
+import { BlogFormValues } from "@/src/components/blog/BlogForm";
 
 export default function BlogAddPage() {
   const router = useRouter();

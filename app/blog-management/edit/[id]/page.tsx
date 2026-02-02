@@ -6,7 +6,7 @@ import { ArrowLeft, Eye, CheckCircle, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import BlogForm from "@/src/components/blog/BlogForm";
 import { blogService, Blog, BlogQuizQuestion } from "@/src/services/blog.service";
-import { BlogFormValues } from "@/src/types/blog";
+import { BlogFormValues } from "@/src/components/blog/BlogForm";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function EditBlogPage() {

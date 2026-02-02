@@ -62,6 +62,7 @@ export default function EditCategoryForm({ category, onClose, onSave }: EditCate
       // Call the real API using rewrites
       await categoryService.updateCategory(category.id, { 
         name: name.trim(),
+        display_name: displayName.trim(),
         exam_ids: selectedExamIds 
       });
       

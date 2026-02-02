@@ -71,7 +71,8 @@ export default function ArticleViewPage() {
 
   return (
     <PageWrapper>
-      <PageHeader title={blog.heading}>
+      <PageHeader title={blog.heading} />
+      <div className="p-8 space-y-6">
         <div className="flex items-center gap-4 mb-4">
           <Button variant="ghost" size="sm" onClick={() => router.back()}>
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -106,10 +107,9 @@ export default function ArticleViewPage() {
             {blog.comments_count} comments
           </div>
         </div>
-      </PageHeader>
 
-      {/* Main Content */}
-      <div className="max-w-4xl mx-auto space-y-6">
+        {/* Main Content */}
+        <div className="max-w-4xl mx-auto space-y-6">
         <Card>
           <CardContent className="pt-6">
             {/* Banner Image */}
@@ -268,6 +268,7 @@ export default function ArticleViewPage() {
           </CardContent>
         </Card>
       </div>
+    </div>
     </PageWrapper>
   );
 }

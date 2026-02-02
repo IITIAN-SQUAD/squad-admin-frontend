@@ -1,5 +1,5 @@
 // Re-export from blog service for consistency
-export {
+export type {
   Blog,
   BlogListItem,
   CreateBlogRequest,
@@ -9,24 +9,7 @@ export {
   BlogOption
 } from '../services/blog.service';
 
-// Form values type
-export interface BlogFormValues {
-  heading: string;
-  sub_heading?: string;
-  banner_image?: string;
-  body: string;
-  summary: string;
-  meta_title?: string;
-  meta_description?: string;
-  canonical_url?: string;
-  meta_image?: string;
-  blog_visibility_status: 'DRAFT' | 'UNDER_REVIEW' | 'PUBLISHED' | 'ARCHIVED' | 'REJECTED';
-  author_id: string;
-  slug: string;
-  category_id: string;
-  schema: string[];
-  tags: string[];
-}
+// Form values type - removed, now defined in BlogForm.tsx to avoid conflicts
 
 export interface Author {
   id: string;
@@ -76,6 +59,8 @@ export interface BlogFormErrors {
 }
 
 // Quiz question type for form state
+import type { BlogOption } from '../services/blog.service';
+
 export interface QuizQuestion {
   id: string;
   text: string;
@@ -84,6 +69,8 @@ export interface QuizQuestion {
 }
 
 // UI State types
+import type { BlogListItem } from '../services/blog.service';
+
 export interface BlogManagementState {
   blogs: BlogListItem[];
   loading: boolean;

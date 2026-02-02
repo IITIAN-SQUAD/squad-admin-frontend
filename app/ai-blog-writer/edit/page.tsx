@@ -8,7 +8,7 @@ import BlogForm from "@/src/components/blog/BlogForm";
 import PageWrapper from "@/src/components/page/page-wrapper";
 import PageHeader from "@/src/components/page/page-header";
 import { blogService } from "@/src/services/blog.service";
-import { BlogFormValues } from "@/src/types/blog";
+import { BlogFormValues } from "@/src/components/blog/BlogForm";
 import { GeneratedBlogWithMetadata } from "@/src/services/ai-blog-generator.service";
 
 function EditAIBlogContent() {
@@ -44,6 +44,12 @@ function EditAIBlogContent() {
     try {
       setIsSubmitting(true);
 
+      // Handle tags - ensure it's always an array
+      let tagsArray: string[] = [];
+      if (blogData?.tags) {
+        tagsArray = Array.isArray(blogData.tags) ? blogData.tags : [];
+      }
+
       // Transform form data to match API structure
       const blogPayload = {
         heading: data.heading,
@@ -60,9 +66,9 @@ function EditAIBlogContent() {
         meta_description: data.meta_description || "",
         meta_image: data.meta_image || "",
         canonical_url: data.canonical_url || "",
-        schema: data.schema.length > 0 ? data.schema[0].split(',').map(s => s.trim()) : [],
+        schema: blogData?.schema || [],
         slug: data.slug,
-        tags: Array.isArray(data.tags) ? data.tags : data.tags.split(',').map(t => t.trim()),
+        tags: tagsArray,
         blog_visibility_status: data.blog_visibility_status,
         author_id: data.author_id,
         category_id: data.category_id,

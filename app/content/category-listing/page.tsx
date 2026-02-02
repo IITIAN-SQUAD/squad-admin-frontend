@@ -109,14 +109,13 @@ export default function CategoryListingPage() {
 
   // Transform data for table display
   const transformedCategories = paginatedCategories.map((category, index) => ({
-    id: category.id,
+    ...category, // Include all category data first
     name: category.name,
     display_name: category.display_name,
     exams: getExamNames(category.exam_ids || []),
     createdOn: new Date(category.created_at).toLocaleDateString(),
     totalBlogs: category.blog_count || 0, // Use actual blog count from API
     createdBy: category.created_by_admin_id, // TODO: Get admin name by ID
-    ...category, // Include all category data for actions
   }));
 
   return (
@@ -180,7 +179,6 @@ export default function CategoryListingPage() {
             columns={TABLE_COLUMNS.categoryListing}
             data={transformedCategories}
             searchPlaceholder="Search categories..."
-            loading={loading}
           />
           
           {/* Pagination */}

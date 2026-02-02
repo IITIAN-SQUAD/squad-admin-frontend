@@ -34,7 +34,7 @@ import { Plus, X, Trash2, GripVertical } from "lucide-react";
 import { authorService, Author } from "@/src/services/author.service";
 import { blogService, CreateBlogRequest, UpdateBlogRequest, BlogQuizQuestion, BlogOption } from "@/src/services/blog.service";
 import { categoryService, Category } from "@/src/services/category.service";
-import { BlogFormValues, QuizQuestion } from "@/src/types/blog";
+import { QuizQuestion } from "@/src/types/blog";
 import { MDXProvider } from "@mdx-js/react";
 import * as runtime from "react/jsx-runtime";
 import { evaluate } from "@mdx-js/mdx";
@@ -81,7 +81,7 @@ const blogFormSchema = z.object({
   tags: z.array(z.string()).default([]),
 });
 
-type BlogFormValues = z.infer<typeof blogFormSchema>;
+export type BlogFormValues = z.infer<typeof blogFormSchema>;
 
 interface BlogFormProps {
   mode: "create" | "edit";
@@ -124,8 +124,8 @@ console.log("code block")
 \`\`\`
 `;
 
-  const form = useForm<BlogFormValues>({
-    resolver: zodResolver(blogFormSchema),
+  const form = useForm({
+    resolver: zodResolver(blogFormSchema) as any,
     defaultValues: {
       heading: initialData?.heading || "",
       sub_heading: initialData?.sub_heading || "",

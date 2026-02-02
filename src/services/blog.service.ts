@@ -180,7 +180,7 @@ class BlogServiceImpl implements BlogService {
 
   async getAllBlogs(page: number = 0, size: number = 20): Promise<BlogListResponse> {
     try {
-      const response = await apiClient.get(`/v0/admin/blog?page=${page}&size=${size}`);
+      const response = await apiClient.get<any>(`/v0/admin/blog?page=${page}&size=${size}`);
       
       // Handle response format - the API returns the array directly
       if (Array.isArray(response.data)) {
