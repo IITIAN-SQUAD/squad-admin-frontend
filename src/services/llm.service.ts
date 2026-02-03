@@ -249,8 +249,7 @@ Return ONLY valid JSON with this exact structure:
 
       const userPrompt = `Topic: ${request.topic}
 
-${request.context ? `Context and Current Information:
-${request.context}
+${request.context ? `${request.context}
 
 ` : ''}
 ${request.tone ? `Tone: ${request.tone}
@@ -263,18 +262,20 @@ ${request.keywords?.length ? `Keywords to include: ${request.keywords.join(', ')
 Generate a comprehensive, well-researched blog post on this topic.
 
 CRITICAL REQUIREMENTS:
-1. **Content Quality**: Write 800-1200 words with accurate facts, statistics, and specific data points
-2. **Structure**: Use proper markdown with ## headings, ### subheadings, lists, bold text, code blocks
-3. **Depth**: Include detailed explanations, real-world examples, case studies, or step-by-step guides
-4. **Authority**: Reference industry best practices, proven methodologies, and credible information
-5. **Specificity**: Avoid generic statements - provide concrete details, numbers, and actionable insights
-6. **Images**: Use Unsplash Source API format: https://source.unsplash.com/800x400/?{topic_keywords}
+1. **USE PROVIDED CONTEXT**: If current information is provided above, you MUST use it as your PRIMARY source. Do NOT use outdated information from your training data.
+2. **Current Data Priority**: When context includes dates, statistics, or recent events, use those exact details in your blog.
+3. **Content Quality**: Write 800-1200 words with accurate facts, statistics, and specific data points FROM THE PROVIDED CONTEXT.
+4. **Structure**: Use proper markdown with ## headings, ### subheadings, lists, bold text, code blocks
+5. **Depth**: Include detailed explanations, real-world examples, case studies, or step-by-step guides
+6. **Authority**: Reference the provided sources and current information. Cite specific data points from the context.
+7. **Specificity**: Use concrete details, numbers, and dates from the provided context. Avoid generic statements.
+8. **Images**: Use Unsplash Source API format: https://source.unsplash.com/800x400/?{topic_keywords}
    - DO NOT use direct photo URLs (https://images.unsplash.com/photo-xxxxx) - they return 404
    - Example: https://source.unsplash.com/800x400/?technology,programming
-7. **Quiz**: Create 2-3 challenging questions in quiz_questions array (NOT in body)
-8. **References**: When using provided context, incorporate facts and data naturally into the content
+9. **Quiz**: Create 2-3 challenging questions in quiz_questions array (NOT in body)
+10. **Source Attribution**: When using facts from the provided context, naturally reference them (e.g., "According to recent reports...", "As of [date]...")
 
-Make this blog authoritative, detailed, and valuable to readers. Include specific examples and technical details where relevant.`;
+IMPORTANT: If current information was provided, your blog MUST reflect that current data. Do not write about 2023 if 2025 data is provided.`;
 
       const messages: LLMMessage[] = [
         { role: 'system', content: systemPrompt },

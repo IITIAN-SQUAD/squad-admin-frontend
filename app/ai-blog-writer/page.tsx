@@ -237,18 +237,23 @@ export default function AIBlogWriterPage() {
                 </div>
 
                 {/* Use Current Context */}
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="useCurrentContext"
-                    checked={useCurrentContext}
-                    onChange={(e) => setUseCurrentContext(e.target.checked)}
-                    disabled={isGenerating}
-                    className="rounded"
-                  />
-                  <Label htmlFor="useCurrentContext" className="cursor-pointer">
-                    Use Tavily for current context
-                  </Label>
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="useCurrentContext"
+                      checked={useCurrentContext}
+                      onChange={(e) => setUseCurrentContext(e.target.checked)}
+                      disabled={isGenerating}
+                      className="rounded"
+                    />
+                    <Label htmlFor="useCurrentContext" className="cursor-pointer">
+                      Use Tavily for current context
+                    </Label>
+                  </div>
+                  <p className="text-xs text-blue-600">
+                    💡 Tip: Tavily is automatically enabled for topics with keywords like "latest", "recent", "news", "2024", "2025", etc.
+                  </p>
                 </div>
 
                 {/* Plagiarism Check */}

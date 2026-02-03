@@ -38,15 +38,38 @@ export interface GeneratedBlogWithMetadata extends GeneratedBlog {
 
 class AIBlogGeneratorService {
   /**
+   * Detect if a topic requires current/latest information
+   */
+  private requiresCurrentInfo(topic: string): boolean {
+    const currentInfoKeywords = [
+      'latest', 'recent', 'current', 'today', 'now', '2024', '2025', '2026',
+      'news', 'update', 'trend', 'new', 'this year', 'this month',
+      'breaking', 'announcement', 'release', 'launch', 'upcoming',
+      'market', 'stock', 'price', 'economy', 'election', 'politics',
+      'covid', 'pandemic', 'war', 'conflict', 'crisis',
+      'technology update', 'ai advancement', 'breakthrough'
+    ];
+    
+    const lowerTopic = topic.toLowerCase();
+    return currentInfoKeywords.some(keyword => lowerTopic.includes(keyword));
+  }
+
+  /**
    * Generate multiple blogs based on configuration
    */
   async generateBlogs(
     config: BlogGenerationConfig
   ): Promise<GeneratedBlogWithMetadata[]> {
     try {
-      console.log('[AIBlogGenerator] Starting blog generation:', config);
-
       const blogs: GeneratedBlogWithMetadata[] = [];
+
+      // Detect if topic requires current information
+      const needsCurrentInfo = this.requiresCurrentInfo(config.topic);
+      const shouldUseTavily = config.useCurrentContext !== false || needsCurrentInfo;
+      
+      if (needsCurrentInfo && config.useCurrentContext === false) {
+        console.warn('[AIBlogGenerator] Topic requires current information. Tavily will be used automatically.');
+      }
 
       // Fetch categories for matching
       const categoriesResponse = await categoryService.getAllCategories();
@@ -62,21 +85,28 @@ class AIBlogGeneratorService {
 
       for (let i = 0; i < config.numberOfBlogs; i++) {
         try {
-          console.log(`[AIBlogGenerator] Generating blog ${i + 1}/${config.numberOfBlogs}`);
-
-          // Get current context from Tavily if enabled
+          // Get current context from Tavily if needed
           let context = '';
-          if (config.useCurrentContext !== false) {
+          if (shouldUseTavily) {
+            if (needsCurrentInfo) {
+              console.log('[AIBlogGenerator] Topic detected as requiring current information. Fetching latest data from Tavily...');
+            }
             const tavilyContext = await tavilyService.getContextForBlog(config.topic);
             context = `
+=== IMPORTANT: USE THIS CURRENT INFORMATION ===
+This topic requires up-to-date information. You MUST use the following current data from ${new Date().toLocaleDateString()} in your blog content.
+DO NOT rely on your training data. Use ONLY the information provided below.
+
 Current Information Summary:
 ${tavilyContext.summary}
 
-Key Points:
+Key Facts and Data Points:
 ${tavilyContext.keyPoints.map((point, idx) => `${idx + 1}. ${point}`).join('\n')}
 
-Sources:
+Verified Sources (Reference these in your content):
 ${tavilyContext.sources.map(s => `- ${s.title}: ${s.url}`).join('\n')}
+
+=== END OF CURRENT INFORMATION ===
             `.trim();
           }
 
