@@ -1,5 +1,6 @@
 /**
  * Tavily API Service - For fetching current context and information
+ * Version: 2.0 - Using proxy API
  */
 
 export interface TavilySearchResult {
@@ -18,14 +19,11 @@ export interface TavilySearchResponse {
 }
 
 class TavilyService {
-  private readonly API_KEY: string;
-  private readonly BASE_URL = 'https://api.tavily.com';
+  private readonly BASE_URL = '/api/tavily';
 
   constructor() {
-    this.API_KEY = process.env.NEXT_PUBLIC_TAVILY_API_KEY || '';
-    if (!this.API_KEY) {
-      console.warn('[TavilyService] API key not found. Set NEXT_PUBLIC_TAVILY_API_KEY in .env.local');
-    }
+    // API key is now handled server-side
+    console.log('[TavilyService] Initialized with proxy API');
   }
 
   /**
@@ -46,7 +44,6 @@ class TavilyService {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          api_key: this.API_KEY,
           query,
           search_depth: options?.searchDepth || 'advanced',
           max_results: options?.maxResults || 5,
