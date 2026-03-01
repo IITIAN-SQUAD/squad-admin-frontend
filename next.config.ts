@@ -54,7 +54,7 @@ const nextConfig: NextConfig = {
     ],
   },
   async rewrites() {
-    const backendUrl = process.env.BACKEND_URL || 'https://serve.iitiansquad.com';
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://serve.iitiansquad.com';
     
     return [
       {

@@ -35,6 +35,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { SIDEBAR_LINKS, SidebarLink } from "@/assets/constants/sidebar-links";
+import { useAuth } from "@/src/contexts/AuthContext";
 
 function SidebarMenuRender(props: { items: SidebarLink[]; fullUrl: string }) {
   return (
@@ -75,6 +76,7 @@ function SidebarMenuRender(props: { items: SidebarLink[]; fullUrl: string }) {
 
 export default function AppSidebar() {
   const pathname = usePathname() || "/";
+  const { logout } = useAuth();
   const [adminName, setAdminName] = useState("Admin");
   const [adminRole, setAdminRole] = useState("Administrator");
 
@@ -227,7 +229,7 @@ export default function AppSidebar() {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={handleLogout}
+                onClick={logout}
                 className="flex-shrink-0 h-8 w-8 hover:bg-red-100 hover:text-red-600"
                 title="Logout"
               >

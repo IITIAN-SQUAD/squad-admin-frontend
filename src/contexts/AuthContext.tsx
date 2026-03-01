@@ -121,13 +121,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = async () => {
-    // Clear local storage and cookies first
+    console.log('[AuthContext] Logging out...');
+    
+    // Clear state first
+    setAdmin(null);
+    
+    // Clear local storage and cookies
     localStorage.removeItem('auth_token');
     localStorage.removeItem('admin');
     document.cookie = 'auth_token=; path=/; max-age=0';
     document.cookie = 'jwt=; path=/; max-age=0';
     
-    setAdmin(null);
+    console.log('[AuthContext] Cleared auth data');
     
     // Call logout API (non-blocking)
     try {
@@ -138,7 +143,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.warn('Logout API failed (non-critical):', error);
     }
     
-    router.push('/login');
+    // Use window.location for hard redirect to ensure clean state
+    console.log('[AuthContext] Redirecting to login...');
+    window.location.href = '/login';
   };
 
   const hasPermission = (permission: Permission): boolean => {

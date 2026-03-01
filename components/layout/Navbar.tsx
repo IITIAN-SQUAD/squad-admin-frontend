@@ -13,76 +13,26 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useAuth } from "@/src/contexts/AuthContext";
 
 export default function Navbar() {
-  const [isLoggedIn, setIsLoggedIn] = React.useState(false);
+  const { admin, isAuthenticated, logout } = useAuth();
   const [adminName, setAdminName] = React.useState("");
   const [adminRole, setAdminRole] = React.useState("");
   const [adminEmail, setAdminEmail] = React.useState("");
 
-  const checkAuth = React.useCallback(() => {
-    const token = localStorage.getItem('auth_token');
-    const admin = localStorage.getItem('admin');
-    if (token && admin) {
-      setIsLoggedIn(true);
-      try {
-        const adminData = JSON.parse(admin);
-        setAdminName(adminData.name || "");
-        setAdminEmail(adminData.email || "");
-        setAdminRole(adminData.role?.name || "");
-      } catch (e) {
-        setIsLoggedIn(false);
-      }
-    } else {
-      setIsLoggedIn(false);
-    }
-  }, []);
-
   React.useEffect(() => {
-    // Check auth on mount
-    checkAuth();
-
-    // Listen for storage changes (when user logs in from another tab or after login)
-    const handleStorageChange = () => {
-      checkAuth();
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    
-    // Also check periodically in case localStorage changes in same tab
-    const interval = setInterval(checkAuth, 1000);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      clearInterval(interval);
-    };
-  }, [checkAuth]);
-
-  const handleLogout = async () => {
-    // Clear local storage and cookies first
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('admin');
-    document.cookie = 'auth_token=; path=/; max-age=0';
-    document.cookie = 'jwt=; path=/; max-age=0';
-    
-    // Call logout API (non-blocking)
-    try {
-      const authService = (await import('@/src/services/auth.service')).default;
-      await authService.logout();
-    } catch (error) {
-      // Ignore API errors, already cleared local data
-      console.warn('Logout API failed (non-critical):', error);
+    if (admin) {
+      setAdminName(admin.name || "");
+      setAdminEmail(admin.email || "");
+      setAdminRole(admin.role?.name || "");
     }
-    
-    // Redirect to login
-    setIsLoggedIn(false);
-    window.location.href = '/login';
-  };
+  }, [admin]);
 
   return (
     <div className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
       <div className="flex h-14 items-center px-4 justify-end gap-4">
-        {isLoggedIn ? (
+        {isAuthenticated ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-9 w-9 rounded-full">
@@ -108,7 +58,7 @@ export default function Navbar() {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout}>
+              <DropdownMenuItem onClick={logout}>
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Log out</span>
               </DropdownMenuItem>

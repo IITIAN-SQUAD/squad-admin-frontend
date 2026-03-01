@@ -3,6 +3,7 @@ import { Inter, Geist, Plus_Jakarta_Sans, DM_Sans } from "next/font/google";
 import "./globals.css";
 import React, { Suspense } from "react";
 import { ThemeProvider } from "@/components/ui/theme-provider";
+import { AuthProvider } from "@/src/contexts/AuthContext";
 import ConditionalLayout from "@/components/layout/ConditionalLayout";
 import { Toaster } from "sonner";
 
@@ -34,9 +35,11 @@ export default function RootLayout({
           forcedTheme="light"
           disableTransitionOnChange
         >
-          <ConditionalLayout>
-            {children}
-          </ConditionalLayout>
+          <AuthProvider>
+            <ConditionalLayout>
+              {children}
+            </ConditionalLayout>
+          </AuthProvider>
           <Toaster position="top-right" richColors />
         </ThemeProvider>
       </body>
