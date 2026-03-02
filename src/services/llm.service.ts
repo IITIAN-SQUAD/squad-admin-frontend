@@ -273,7 +273,8 @@ CRITICAL REQUIREMENTS:
    - DO NOT use direct photo URLs (https://images.unsplash.com/photo-xxxxx) - they return 404
    - Example: https://source.unsplash.com/800x400/?technology,programming
 9. **Quiz**: Create 2-3 challenging questions in quiz_questions array (NOT in body)
-10. **Source Attribution**: When using facts from the provided context, naturally reference them (e.g., "According to recent reports...", "As of [date]...")
+10. **Source Attribution**: When using facts from the provided context, naturally reference them inline (e.g., "According to recent reports...", "As of [date]...", "Recent studies show..."). DO NOT use footnote markers like [^1^] or [1] - integrate citations naturally into the text.
+11. **NO FOOTNOTES**: Do not include footnote references, citation markers, or reference lists at the end. All source attribution should be inline and natural.
 
 IMPORTANT: If current information was provided, your blog MUST reflect that current data. Do not write about 2023 if 2025 data is provided.`;
 
@@ -288,14 +289,105 @@ IMPORTANT: If current information was provided, your blog MUST reflect that curr
       });
 
       // Parse JSON response
-      const jsonMatch = response.content.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        throw new Error('Failed to parse blog JSON from LLM response');
-      }
-
-      const blog = JSON.parse(jsonMatch[0]) as GeneratedBlog;
+      // The LLM response should contain a JSON object
+      let blog: GeneratedBlog;
       
-      console.log('[LLMService] Blog generated successfully');
+      try {
+        // First, try to find and extract the JSON object
+        const content = response.content.trim();
+        
+        console.log('[LLMService] Raw response content length:', content.length);
+        console.log('[LLMService] Response preview:', content.substring(0, 200));
+        
+        // Find the JSON object boundaries
+        const startIdx = content.indexOf('{');
+        const endIdx = content.lastIndexOf('}');
+        
+        if (startIdx === -1 || endIdx === -1) {
+          throw new Error('No JSON object found in LLM response');
+        }
+        
+        let jsonString = content.substring(startIdx, endIdx + 1);
+        console.log('[LLMService] Extracted JSON length:', jsonString.length);
+        console.log('[LLMService] JSON preview:', jsonString.substring(0, 200));
+        
+        // The LLM response might have literal newlines in string values which breaks JSON parsing
+        // We need to escape newlines ONLY within string values, not structural JSON newlines
+        // Strategy: Replace newlines within quoted strings
+        let inString = false;
+        let escape = false;
+        let cleaned = '';
+        
+        for (let i = 0; i < jsonString.length; i++) {
+          const char = jsonString[i];
+          
+          if (escape) {
+            // Previous char was backslash, keep this char as-is
+            cleaned += char;
+            escape = false;
+            continue;
+          }
+          
+          if (char === '\\') {
+            escape = true;
+            cleaned += char;
+            continue;
+          }
+          
+          if (char === '"') {
+            inString = !inString;
+            cleaned += char;
+            continue;
+          }
+          
+          // If we're inside a string and encounter a newline, escape it
+          if (inString && char === '\n') {
+            cleaned += '\\n';
+            continue;
+          }
+          
+          if (inString && char === '\r') {
+            cleaned += '\\r';
+            continue;
+          }
+          
+          if (inString && char === '\t') {
+            cleaned += '\\t';
+            continue;
+          }
+          
+          // Keep everything else as-is
+          cleaned += char;
+        }
+        
+        console.log('[LLMService] Cleaned JSON preview:', cleaned.substring(0, 200));
+        
+        // Parse the JSON
+        blog = JSON.parse(cleaned) as GeneratedBlog;
+        
+        console.log('[LLMService] Blog generated successfully');
+        console.log('[LLMService] Blog heading:', blog.heading);
+      } catch (error) {
+        console.error('[LLMService] Failed to parse blog JSON');
+        console.error('[LLMService] Response content preview:', response.content.substring(0, 500));
+        console.error('[LLMService] Parse error:', error);
+        
+        // Try to show where the error occurred
+        if (error instanceof SyntaxError) {
+          const match = error.message.match(/position (\d+)/);
+          if (match) {
+            const pos = parseInt(match[1]);
+            const start = Math.max(0, pos - 50);
+            const end = Math.min(response.content.length, pos + 50);
+            console.error('[LLMService] Error context:', response.content.substring(start, end));
+            console.error('[LLMService] Error position marked:', 
+              response.content.substring(start, pos) + ' >>> ERROR HERE <<< ' + response.content.substring(pos, end));
+          }
+        }
+        
+        throw new Error(`Failed to parse blog JSON: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+      
       return blog;
     } catch (error: any) {
       console.error('[LLMService] Blog generation failed:', error);

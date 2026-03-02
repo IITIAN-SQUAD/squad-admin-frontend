@@ -220,6 +220,12 @@ ${tavilyContext.sources.map(s => `- ${s.title}: ${s.url}`).join('\n')}
             await new Promise(resolve => setTimeout(resolve, 1000));
           }
         } catch (error) {
+          console.error('[AIBlogGenerator] Failed to generate blog:', error);
+          console.error('[AIBlogGenerator] Error details:', {
+            message: error instanceof Error ? error.message : 'Unknown error',
+            stack: error instanceof Error ? error.stack : undefined,
+            blogIndex: i,
+          });
           // Continue with next blog instead of failing completely
         }
       }
